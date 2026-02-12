@@ -13,8 +13,15 @@ A custom Home Assistant integration for the Homevolt (Tibber) battery system tha
 - **Device**: Homevolt battery system (Tibber ECU)
 - **API**: Local HTTP JSON API at `http://<host>/` (no auth or HTTP Basic Auth)
 - **Protocol**: `local_polling` via HTTP GET/POST
-- **Hardware**: 1 EMS/inverter (6kW rated), 2 BMS battery modules (13.3 kWh total), CT clamp sensors (grid, solar, load)
+- **Hardware**: 1+ EMS/inverter (6kW rated each), 1-N BMS battery modules (6.6 kWh each), optional CT clamp sensors (grid, solar, load)
 - **Network**: WiFi + LTE, mDNS advertised as `Homevolt`
+
+### Dynamic Hardware Support
+
+Not all Homevolt systems have identical hardware. The integration MUST handle:
+- **Variable BMS count**: Systems can have 1 or more battery modules. Create entities dynamically based on `len(bms_data)`.
+- **Optional CT clamps**: Grid/solar/load sensors may not be installed. Only create CT sensor entities when `euid != "0000000000000000"` and `type != "unspecified"`.
+- **Graceful degradation**: Handle missing fields and mismatched `bms_info`/`bms_data` array lengths.
 
 ## Architecture
 

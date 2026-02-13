@@ -3,122 +3,28 @@
 from __future__ import annotations
 
 import json
-import sys
 from datetime import timedelta
 from pathlib import Path
-from types import ModuleType
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# Stub out homeassistant and aiohttp modules so the coordinator can be
-# imported even when Home Assistant or compatible aiohttp is not installed
-# (e.g. on system Python without a full HA venv).
-# When running inside a real HA test environment these stubs are harmless
-# because the real modules are already in sys.modules.
-# ---------------------------------------------------------------------------
-
-
-def _ensure_aiohttp_stub() -> None:
-    """Stub out aiohttp if it cannot be imported (broken version etc.)."""
-    try:
-        import aiohttp  # noqa: F401
-
-        return  # aiohttp works fine; nothing to do.
-    except (ImportError, Exception):
-        pass
-
-    # Create a minimal aiohttp stub with what api.py needs
-    aiohttp_mod = ModuleType("aiohttp")
-    aiohttp_mod.ClientSession = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.BasicAuth = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.ClientTimeout = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.ClientConnectionError = type(  # type: ignore[attr-defined]
-        "ClientConnectionError", (Exception,), {}
-    )
-    sys.modules["aiohttp"] = aiohttp_mod
-
-
-def _ensure_ha_stubs() -> None:
-    """Install lightweight stubs for homeassistant modules if not present."""
-    if "homeassistant" in sys.modules:
-        return  # Real HA is available; nothing to do.
-
-    # --- homeassistant (top-level) ---
-    ha = ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha
-
-    # --- homeassistant.core ---
-    ha_core = ModuleType("homeassistant.core")
-    ha_core.HomeAssistant = MagicMock  # type: ignore[attr-defined]
-    sys.modules["homeassistant.core"] = ha_core
-
-    # --- homeassistant.config_entries ---
-    ha_config = ModuleType("homeassistant.config_entries")
-    ha_config.ConfigEntry = MagicMock  # type: ignore[attr-defined]
-    sys.modules["homeassistant.config_entries"] = ha_config
-
-    # --- homeassistant.exceptions ---
-    ha_exc = ModuleType("homeassistant.exceptions")
-
-    class _ConfigEntryAuthFailed(Exception):
-        pass
-
-    ha_exc.ConfigEntryAuthFailed = _ConfigEntryAuthFailed  # type: ignore[attr-defined]
-    sys.modules["homeassistant.exceptions"] = ha_exc
-
-    # --- homeassistant.helpers ---
-    ha_helpers = ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = ha_helpers
-
-    # --- homeassistant.helpers.update_coordinator ---
-    ha_coord_mod = ModuleType("homeassistant.helpers.update_coordinator")
-
-    class _UpdateFailed(Exception):
-        pass
-
-    class _StubDataUpdateCoordinator:
-        """Minimal stand-in for DataUpdateCoordinator."""
-
-        def __init__(self, hass, logger, *, name, config_entry=None, update_interval=None):
-            self.hass = hass
-            self.logger = logger
-            self.name = name
-            self.config_entry = config_entry
-            self.update_interval = update_interval
-            self.data = None  # matches real coordinator: None before first update
-
-        def __class_getitem__(cls, item):
-            """Support generic subscription (e.g. DataUpdateCoordinator[T])."""
-            return cls
-
-    ha_coord_mod.DataUpdateCoordinator = _StubDataUpdateCoordinator  # type: ignore[attr-defined]
-    ha_coord_mod.UpdateFailed = _UpdateFailed  # type: ignore[attr-defined]
-    sys.modules["homeassistant.helpers.update_coordinator"] = ha_coord_mod
-
-
-_ensure_aiohttp_stub()
-_ensure_ha_stubs()
-
-# Now safe to import the coordinator and its dependencies
-from custom_components.homevolt.api import (  # noqa: E402
+# Stubs are set up by conftest.py before this module is imported
+from custom_components.homevolt.api import (
     HomevoltApiClient,
     HomevoltAuthError,
     HomevoltConnectionError,
 )
-from custom_components.homevolt.coordinator import HomevoltCoordinator  # noqa: E402
-from custom_components.homevolt.models import (  # noqa: E402
+from custom_components.homevolt.coordinator import HomevoltCoordinator
+from custom_components.homevolt.models import (
     ErrorReportEntry,
     HomevoltData,
     HomevoltEmsResponse,
     HomevoltStatusResponse,
 )
 
-# Re-import the exception classes that the coordinator actually raises,
-# so our assertions match the exact class object.
-from homeassistant.exceptions import ConfigEntryAuthFailed  # noqa: E402
-from homeassistant.helpers.update_coordinator import UpdateFailed  # noqa: E402
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -269,7 +175,6 @@ async def test_second_fetch_only_gets_ems(coordinator, mock_client):
 @pytest.mark.asyncio
 async def test_ems_fetched_every_cycle(coordinator, mock_client):
     """EMS data should be fetched on every single cycle."""
-    # Run 5 cycles
     for i in range(5):
         result = await coordinator._async_update_data()
         coordinator.data = result
@@ -313,7 +218,6 @@ async def test_status_refreshed_at_20th_cycle(coordinator, mock_client):
 @pytest.mark.asyncio
 async def test_cached_data_carried_forward(coordinator, mock_client):
     """When an endpoint is not polled, its previous value is carried forward."""
-    # First fetch: get all
     first_result = await coordinator._async_update_data()
     coordinator.data = first_result
     original_status = first_result.status
@@ -321,15 +225,11 @@ async def test_cached_data_carried_forward(coordinator, mock_client):
 
     mock_client.reset_mock()
 
-    # Second fetch: only EMS
     second_result = await coordinator._async_update_data()
     coordinator.data = second_result
 
-    # Status and errors should be the exact same objects
     assert second_result.status is original_status
     assert second_result.error_report is original_errors
-
-    # But EMS should be freshly fetched
     mock_client.async_get_ems_data.assert_called_once()
 
 
@@ -379,7 +279,6 @@ async def test_auth_error_on_status_triggers_config_entry_auth_failed(
     coordinator, mock_client
 ):
     """Auth error during status fetch should also trigger ConfigEntryAuthFailed."""
-    # EMS succeeds, but status raises auth error
     mock_client.async_get_status.side_effect = HomevoltAuthError("Token expired")
 
     with pytest.raises(ConfigEntryAuthFailed, match="Invalid credentials"):

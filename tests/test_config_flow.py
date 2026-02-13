@@ -2,213 +2,33 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
-import sys
 from pathlib import Path
-from types import ModuleType
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import voluptuous as vol
 
-# ---------------------------------------------------------------------------
-# Stub out homeassistant and aiohttp modules so the config flow can be
-# imported even when Home Assistant or compatible aiohttp is not installed.
-# This mirrors the pattern used in test_coordinator.py.
-# ---------------------------------------------------------------------------
-
-
-def _ensure_aiohttp_stub() -> None:
-    """Stub out aiohttp if it cannot be imported (broken version etc.)."""
-    try:
-        import aiohttp  # noqa: F401
-
-        return
-    except (ImportError, Exception):
-        pass
-
-    aiohttp_mod = ModuleType("aiohttp")
-    aiohttp_mod.ClientSession = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.BasicAuth = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.ClientTimeout = MagicMock  # type: ignore[attr-defined]
-    aiohttp_mod.ClientConnectionError = type(  # type: ignore[attr-defined]
-        "ClientConnectionError", (Exception,), {}
-    )
-    sys.modules["aiohttp"] = aiohttp_mod
-
-
-def _ensure_ha_stubs() -> None:
-    """Install lightweight stubs for homeassistant modules."""
-    if "homeassistant" in sys.modules and hasattr(
-        sys.modules.get("homeassistant", None), "__file__"
-    ):
-        return  # Real HA is available
-
-    # --- homeassistant (top-level) ---
-    ha = sys.modules.get("homeassistant") or ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha
-
-    # --- homeassistant.core ---
-    ha_core = sys.modules.get("homeassistant.core") or ModuleType("homeassistant.core")
-    ha_core.HomeAssistant = MagicMock  # type: ignore[attr-defined]
-    if not hasattr(ha_core, "callback"):
-        ha_core.callback = lambda f: f  # type: ignore[attr-defined]
-    sys.modules["homeassistant.core"] = ha_core
-
-    # --- homeassistant.const ---
-    ha_const = sys.modules.get("homeassistant.const") or ModuleType("homeassistant.const")
-    ha_const.CONF_HOST = "host"  # type: ignore[attr-defined]
-    ha_const.CONF_PASSWORD = "password"  # type: ignore[attr-defined]
-    ha_const.CONF_PORT = "port"  # type: ignore[attr-defined]
-    sys.modules["homeassistant.const"] = ha_const
-
-    # --- homeassistant.config_entries ---
-    ha_config = sys.modules.get("homeassistant.config_entries") or ModuleType(
-        "homeassistant.config_entries"
-    )
-
-    # ConfigFlowResult is just a TypedDict / dict in real HA
-    ha_config.ConfigFlowResult = dict  # type: ignore[attr-defined]
-
-    class _StubConfigFlow:
-        """Minimal ConfigFlow stub."""
-
-        VERSION = 1
-
-        def __init_subclass__(cls, *, domain: str = "", **kwargs: Any) -> None:
-            cls._domain = domain
-            super().__init_subclass__(**kwargs)
-
-        def __init__(self) -> None:
-            self.hass = None
-            self.context: dict[str, Any] = {}
-            self._unique_id: str | None = None
-
-        async def async_set_unique_id(self, uid: str) -> None:
-            self._unique_id = uid
-
-        def _abort_if_unique_id_configured(self, updates: dict | None = None) -> None:
-            """Abort if unique_id is already configured.
-
-            In tests, we control this via the _existing_unique_ids set.
-            """
-            existing = getattr(self, "_existing_unique_ids", set())
-            if self._unique_id in existing:
-                raise _AbortFlow("already_configured")
-
-        def async_show_form(self, **kwargs: Any) -> dict:
-            return {"type": "form", **kwargs}
-
-        def async_create_entry(self, **kwargs: Any) -> dict:
-            return {"type": "create_entry", **kwargs}
-
-        def async_abort(self, **kwargs: Any) -> dict:
-            return {"type": "abort", **kwargs}
-
-    class _AbortFlow(Exception):
-        """Stub for AbortFlow exception."""
-
-        def __init__(self, reason: str) -> None:
-            self.reason = reason
-            super().__init__(reason)
-
-    ha_config.ConfigFlow = _StubConfigFlow  # type: ignore[attr-defined]
-    ha_config.AbortFlow = _AbortFlow  # type: ignore[attr-defined]
-
-    class _StubOptionsFlow:
-        """Minimal OptionsFlow stub."""
-
-        def __init__(self) -> None:
-            self.config_entry = None
-
-        def async_show_form(self, **kwargs: Any) -> dict:
-            return {"type": "form", **kwargs}
-
-        def async_create_entry(self, **kwargs: Any) -> dict:
-            return {"type": "create_entry", **kwargs}
-
-    ha_config.OptionsFlow = _StubOptionsFlow  # type: ignore[attr-defined]
-    sys.modules["homeassistant.config_entries"] = ha_config
-
-    # --- homeassistant.exceptions ---
-    ha_exc = sys.modules.get("homeassistant.exceptions") or ModuleType(
-        "homeassistant.exceptions"
-    )
-    if not hasattr(ha_exc, "ConfigEntryAuthFailed"):
-
-        class _ConfigEntryAuthFailed(Exception):
-            pass
-
-        ha_exc.ConfigEntryAuthFailed = _ConfigEntryAuthFailed  # type: ignore[attr-defined]
-    sys.modules["homeassistant.exceptions"] = ha_exc
-
-    # --- homeassistant.helpers ---
-    ha_helpers = sys.modules.get("homeassistant.helpers") or ModuleType(
-        "homeassistant.helpers"
-    )
-    sys.modules["homeassistant.helpers"] = ha_helpers
-
-    # --- homeassistant.helpers.aiohttp_client ---
-    ha_aiohttp = sys.modules.get("homeassistant.helpers.aiohttp_client") or ModuleType(
-        "homeassistant.helpers.aiohttp_client"
-    )
-    ha_aiohttp.async_get_clientsession = MagicMock(  # type: ignore[attr-defined]
-        return_value=MagicMock()
-    )
-    sys.modules["homeassistant.helpers.aiohttp_client"] = ha_aiohttp
-
-    # --- homeassistant.helpers.update_coordinator ---
-    ha_coord_mod = sys.modules.get(
-        "homeassistant.helpers.update_coordinator"
-    ) or ModuleType("homeassistant.helpers.update_coordinator")
-    if not hasattr(ha_coord_mod, "DataUpdateCoordinator"):
-
-        class _UpdateFailed(Exception):
-            pass
-
-        class _StubDataUpdateCoordinator:
-            def __init__(
-                self, hass, logger, *, name, config_entry=None, update_interval=None
-            ):
-                self.hass = hass
-                self.logger = logger
-                self.name = name
-                self.config_entry = config_entry
-                self.update_interval = update_interval
-                self.data = None
-
-            def __class_getitem__(cls, item):
-                return cls
-
-        ha_coord_mod.DataUpdateCoordinator = _StubDataUpdateCoordinator  # type: ignore[attr-defined]
-        ha_coord_mod.UpdateFailed = _UpdateFailed  # type: ignore[attr-defined]
-    sys.modules["homeassistant.helpers.update_coordinator"] = ha_coord_mod
-
-
-_ensure_aiohttp_stub()
-_ensure_ha_stubs()
-
-# Now safe to import our modules
-from custom_components.homevolt.api import (  # noqa: E402
+# Stubs are set up by conftest.py before this module is imported
+from custom_components.homevolt.api import (
     HomevoltApiClient,
     HomevoltAuthError,
     HomevoltConnectionError,
 )
-from custom_components.homevolt.config_flow import (  # noqa: E402
+from custom_components.homevolt.config_flow import (
     HomevoltConfigFlow,
     HomevoltOptionsFlow,
 )
-from custom_components.homevolt.const import (  # noqa: E402
+from custom_components.homevolt.const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
 )
-from custom_components.homevolt.models import (  # noqa: E402
+from custom_components.homevolt.models import (
     EmsDevice,
     HomevoltEmsResponse,
 )
-from homeassistant.config_entries import AbortFlow  # noqa: E402
+from homeassistant.config_entries import AbortFlow
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -463,7 +283,6 @@ async def test_zeroconf_discovery_success(flow, ems_response):
 
         result = await flow.async_step_zeroconf(discovery_info)
 
-    # Should show the zeroconf_confirm form
     assert result["type"] == "form"
     assert result["step_id"] == "zeroconf_confirm"
     assert flow._host == "192.168.70.12"
@@ -550,7 +369,6 @@ async def test_zeroconf_auth_error_aborts(flow):
 @pytest.mark.asyncio
 async def test_user_step_duplicate_aborts(flow, ems_response):
     """Test that configuring a device with an existing unique_id aborts."""
-    # Simulate that this unique_id is already configured
     flow._existing_unique_ids = {"9731192375880"}
 
     with patch(
@@ -647,8 +465,6 @@ async def test_zeroconf_confirm_shows_form(flow):
 
 def test_options_flow_shows_form():
     """Test that options flow shows form with current value."""
-    import asyncio
-
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
     config_entry.options = {"scan_interval": 60}
@@ -664,8 +480,6 @@ def test_options_flow_shows_form():
 
 def test_options_flow_saves_new_interval():
     """Test that options flow saves the new scan interval."""
-    import asyncio
-
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
     config_entry.options = {"scan_interval": 30}
@@ -681,11 +495,9 @@ def test_options_flow_saves_new_interval():
 
 def test_options_flow_default_when_no_option_set():
     """Test that options flow defaults to DEFAULT_SCAN_INTERVAL."""
-    import asyncio
-
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
-    config_entry.options = {}  # No scan_interval set
+    config_entry.options = {}
     options_flow.config_entry = config_entry
 
     result = asyncio.get_event_loop().run_until_complete(
@@ -693,7 +505,6 @@ def test_options_flow_default_when_no_option_set():
     )
 
     assert result["type"] == "form"
-    # The form should be shown; the default value is handled by voluptuous schema
 
 
 # ---------------------------------------------------------------------------

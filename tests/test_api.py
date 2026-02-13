@@ -1,16 +1,23 @@
 """Tests for Homevolt API client."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-import aiohttp
 import pytest
-import pytest_asyncio
-from aioresponses import aioresponses
 
-from custom_components.homevolt.api import (
+# These tests require a working aiohttp + aioresponses.
+# Skip the entire module if they can't be imported (e.g. broken yarl version).
+aiohttp = pytest.importorskip("aiohttp")
+pytest.importorskip("aioresponses")
+
+import pytest_asyncio  # noqa: E402
+from aioresponses import aioresponses  # noqa: E402
+
+from custom_components.homevolt.api import (  # noqa: E402
     HomevoltApiClient,
     HomevoltApiError,
     HomevoltAuthError,
@@ -131,7 +138,7 @@ async def test_retry_exhausted_raises(api_client):
             m.get("http://192.168.70.12:80/ems.json", status=503)
             with pytest.raises(HomevoltApiError, match="Server error 503"):
                 await api_client.async_get_ems_data()
-            assert mock_sleep.call_count == 2  # sleeps between retries, not after last
+            assert mock_sleep.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -188,7 +195,6 @@ async def test_auth_header_sent_with_password(api_client_with_password, ems_fixt
         m.get("http://192.168.70.12:80/ems.json", payload=ems_fixture)
         result = await api_client_with_password.async_get_ems_data()
         assert result.type == "ems_data"
-        # Verify the request was made (aioresponses will have consumed it)
         m.assert_called_once()
 
 

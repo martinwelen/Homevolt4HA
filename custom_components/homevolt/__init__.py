@@ -1,0 +1,1 @@
+"""The Homevolt integration."""

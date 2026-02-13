@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,7 +10,6 @@ import pytest
 
 # Stubs are set up by conftest.py before this module is imported
 from custom_components.homevolt.api import (
-    HomevoltApiClient,
     HomevoltAuthError,
     HomevoltConnectionError,
 )
@@ -24,10 +22,7 @@ from custom_components.homevolt.const import (
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
 )
-from custom_components.homevolt.models import (
-    EmsDevice,
-    HomevoltEmsResponse,
-)
+from custom_components.homevolt.models import HomevoltEmsResponse
 from homeassistant.config_entries import AbortFlow
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -463,46 +458,43 @@ async def test_zeroconf_confirm_shows_form(flow):
 # ---------------------------------------------------------------------------
 
 
-def test_options_flow_shows_form():
+@pytest.mark.asyncio
+async def test_options_flow_shows_form():
     """Test that options flow shows form with current value."""
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
     config_entry.options = {"scan_interval": 60}
     options_flow.config_entry = config_entry
 
-    result = asyncio.get_event_loop().run_until_complete(
-        options_flow.async_step_init(user_input=None)
-    )
+    result = await options_flow.async_step_init(user_input=None)
 
     assert result["type"] == "form"
     assert result["step_id"] == "init"
 
 
-def test_options_flow_saves_new_interval():
+@pytest.mark.asyncio
+async def test_options_flow_saves_new_interval():
     """Test that options flow saves the new scan interval."""
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
     config_entry.options = {"scan_interval": 30}
     options_flow.config_entry = config_entry
 
-    result = asyncio.get_event_loop().run_until_complete(
-        options_flow.async_step_init(user_input={"scan_interval": 120})
-    )
+    result = await options_flow.async_step_init(user_input={"scan_interval": 120})
 
     assert result["type"] == "create_entry"
     assert result["data"]["scan_interval"] == 120
 
 
-def test_options_flow_default_when_no_option_set():
+@pytest.mark.asyncio
+async def test_options_flow_default_when_no_option_set():
     """Test that options flow defaults to DEFAULT_SCAN_INTERVAL."""
     options_flow = HomevoltOptionsFlow()
     config_entry = MagicMock()
     config_entry.options = {}
     options_flow.config_entry = config_entry
 
-    result = asyncio.get_event_loop().run_until_complete(
-        options_flow.async_step_init(user_input=None)
-    )
+    result = await options_flow.async_step_init(user_input=None)
 
     assert result["type"] == "form"
 
@@ -572,3 +564,31 @@ async def test_zeroconf_custom_port(flow, ems_response):
     assert flow._host == "10.0.0.5"
     assert flow._port == 8080
     assert result["type"] == "form"
+
+
+# ---------------------------------------------------------------------------
+# Tests: Empty EMS list fallback (unique_id falls back to host)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_user_step_empty_ems_uses_host_as_unique_id(flow):
+    """Test that unique_id falls back to host when no EMS devices."""
+    empty_ems = _make_empty_ems_response()
+
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(return_value=empty_ems)
+        mock_client_cls.return_value = mock_client
+
+        result = await flow.async_step_user(
+            user_input={"host": "192.168.70.12"}
+        )
+
+    assert result["type"] == "create_entry"
+    assert flow._unique_id == "192.168.70.12"

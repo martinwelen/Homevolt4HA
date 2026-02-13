@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
@@ -111,7 +110,10 @@ class HomevoltConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             ems_data = await client.async_validate_connection()
-        except (HomevoltConnectionError, HomevoltAuthError, Exception):
+        except (HomevoltConnectionError, HomevoltAuthError):
+            return self.async_abort(reason="cannot_connect")
+        except Exception:
+            _LOGGER.debug("Unexpected error during Zeroconf validation", exc_info=True)
             return self.async_abort(reason="cannot_connect")
 
         ecu_id = str(ems_data.ems[0].ecu_id) if ems_data.ems else host

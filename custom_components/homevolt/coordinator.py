@@ -1,0 +1,81 @@
+"""DataUpdateCoordinator for Homevolt."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+import logging
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
+
+from .api import HomevoltApiClient, HomevoltAuthError, HomevoltConnectionError
+from .const import (
+    DEFAULT_SCAN_INTERVAL,
+    ERROR_REPORT_POLL_INTERVAL,
+    STATUS_POLL_INTERVAL,
+)
+from .models import HomevoltData
+
+_LOGGER = logging.getLogger(__name__)
+
+# Python 3.9-compatible type alias (3.12 would use: type HomevoltConfigEntry = ...)
+HomevoltConfigEntry = ConfigEntry
+
+
+class HomevoltCoordinator(DataUpdateCoordinator[HomevoltData]):
+    """Coordinator for Homevolt data updates with tiered polling."""
+
+    config_entry: HomevoltConfigEntry
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config_entry: HomevoltConfigEntry,
+        client: HomevoltApiClient,
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
+    ) -> None:
+        """Initialize the coordinator."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Homevolt",
+            config_entry=config_entry,
+            update_interval=timedelta(seconds=scan_interval),
+        )
+        self.client = client
+        self._poll_count = 0
+
+    async def _async_update_data(self) -> HomevoltData:
+        """Fetch data from the Homevolt API with tiered polling."""
+        self._poll_count += 1
+
+        try:
+            # Always fetch EMS data (primary data source)
+            ems = await self.client.async_get_ems_data()
+
+            # Build the combined data object
+            combined = HomevoltData(ems=ems)
+
+            # Fetch status data every Nth cycle
+            if self._poll_count % STATUS_POLL_INTERVAL == 0 or self.data is None:
+                combined.status = await self.client.async_get_status()
+            elif self.data is not None:
+                combined.status = self.data.status
+
+            # Fetch error report every Nth cycle
+            if self._poll_count % ERROR_REPORT_POLL_INTERVAL == 0 or self.data is None:
+                combined.error_report = await self.client.async_get_error_report()
+            elif self.data is not None:
+                combined.error_report = self.data.error_report
+
+        except HomevoltAuthError as err:
+            raise ConfigEntryAuthFailed("Invalid credentials") from err
+        except HomevoltConnectionError as err:
+            raise UpdateFailed(f"Error communicating with Homevolt: {err}") from err
+
+        return combined

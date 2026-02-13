@@ -1,0 +1,64 @@
+{
+    "up_time": 308028358,
+    "poll_time": 0,
+    "firmware": {
+        "esp": "2929-a1e89e8d",
+        "efr": "795-379a5e21"
+    },
+    "wifi_status": {
+        "wifi_mode": "sta",
+        "ip": "192.168.70.12",
+        "ssid": "OurNetwork-IoT",
+        "bssid": "e263da2a34c6",
+        "rssi": -60,
+        "connected": true,
+        "wifi_err_buf": []
+    },
+    "lte_status": {
+        "imei": "863740061259708",
+        "imsi": "234502103177015",
+        "iccid": "89457300000021770154",
+        "operator": "\"24008\"",
+        "operator_name": "Telenor SE",
+        "area_code": "",
+        "cell_id": "",
+        "band": "\"LTE BAND 20\"",
+        "acc_tech": "eMTC",
+        "sysmode": "eMTC",
+        "rssi_db": -45,
+        "rssi": 31,
+        "ber": 99,
+        "chan": 6400,
+        "pdp_active": true,
+        "sim_type": "CHIP",
+        "f_pin_ok": true,
+        "f_present": true,
+        "scan_seq": "020301"
+    },
+    "mqtt_status": {
+        "connected": true,
+        "subscribed": true,
+        "last_error": {
+            "esp_tls_last_esp_err": 0,
+            "esp_tls_stack_err": 0,
+            "esp_tls_cert_verify_flags": 0,
+            "error_type": 0,
+            "connect_return_code": 0,
+            "esp_transport_sock_errno": 0
+        }
+    },
+    "ota_update_running": false,
+    "w868_status": {
+        "product_id": 57577,
+        "efr_id": "90395efffe802639",
+        "network_state": 2,
+        "node_type": 1,
+        "node_id": 0,
+        "pan_id": 36494,
+        "radio_channel": 0,
+        "radio_power": 200
+    },
+    "ems_status": {
+        "bms_info": []
+    }
+}

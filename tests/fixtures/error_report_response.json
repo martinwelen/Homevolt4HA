@@ -1,0 +1,332 @@
+[
+    {
+        "sub_system_id": 0,
+        "sub_system_name": "ECU",
+        "error_id": 1,
+        "error_name": "power_24v",
+        "activated": "ok",
+        "message": "",
+        "details": []
+    },
+    {
+        "sub_system_id": 0,
+        "sub_system_name": "ECU",
+        "error_id": 2,
+        "error_name": "ledstrip_detected",
+        "activated": "ok",
+        "message": "Rev:2 (702 mV)",
+        "details": []
+    },
+    {
+        "sub_system_id": 0,
+        "sub_system_name": "ECU",
+        "error_id": 3,
+        "error_name": "local_mode_disabled",
+        "activated": "ok",
+        "message": "",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 1,
+        "error_name": "ems_connectivity",
+        "activated": "ok",
+        "message": "EMS online",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 2,
+        "error_name": "no_battery_found",
+        "activated": "ok",
+        "message": "BMS online count: 2",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 4,
+        "error_name": "ems_alarm",
+        "activated": "ok",
+        "message": "No EMS alarms",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 6,
+        "error_name": "ems_data_valid",
+        "activated": "ok",
+        "message": "EMS data valid",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 7,
+        "error_name": "protocol_version",
+        "activated": "ok",
+        "message": "Protocol version: 5",
+        "details": []
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 8,
+        "error_name": "ems_info",
+        "activated": "ok",
+        "message": "3 EMS infos",
+        "details": [
+            "EMS_INFO_CONNECTED_TO_BACKEND",
+            "EMS_INFO_RTC_SYNCRONIZED",
+            "EMS_INFO_LOW_POWER_MODE"
+        ]
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 9,
+        "error_name": "ems_warning",
+        "activated": "warning",
+        "message": "1 EMS warnings",
+        "details": [
+            "EMS_WARNING_UNDER_SOC_MIN_WARNING"
+        ]
+    },
+    {
+        "sub_system_id": 1,
+        "sub_system_name": "EMS",
+        "error_id": 10,
+        "error_name": "ems_state",
+        "activated": "ok",
+        "message": "Throttled",
+        "details": []
+    },
+    {
+        "sub_system_id": 2,
+        "sub_system_name": "CONNECTIVITY",
+        "error_id": 1,
+        "error_name": "wifi_sta",
+        "activated": "ok",
+        "message": "WiFi OK",
+        "details": []
+    },
+    {
+        "sub_system_id": 2,
+        "sub_system_name": "CONNECTIVITY",
+        "error_id": 2,
+        "error_name": "lte",
+        "activated": "ok",
+        "message": "LTE OK",
+        "details": []
+    },
+    {
+        "sub_system_id": 2,
+        "sub_system_name": "CONNECTIVITY",
+        "error_id": 3,
+        "error_name": "ems",
+        "activated": "ok",
+        "message": "EMS OK",
+        "details": []
+    },
+    {
+        "sub_system_id": 2,
+        "sub_system_name": "CONNECTIVITY",
+        "error_id": 4,
+        "error_name": "wifi_ap",
+        "activated": "ok",
+        "message": "AP OK",
+        "details": []
+    },
+    {
+        "sub_system_id": 3,
+        "sub_system_name": "OTA",
+        "error_id": 1,
+        "error_name": "Firmware for esp32",
+        "activated": "ok",
+        "message": "up2date",
+        "details": []
+    },
+    {
+        "sub_system_id": 3,
+        "sub_system_name": "OTA",
+        "error_id": 2,
+        "error_name": "Firmware for bg95",
+        "activated": "error",
+        "message": "error 'error_bad_version'",
+        "details": []
+    },
+    {
+        "sub_system_id": 3,
+        "sub_system_name": "OTA",
+        "error_id": 3,
+        "error_name": "Firmware for webapp",
+        "activated": "ok",
+        "message": "up2date",
+        "details": []
+    },
+    {
+        "sub_system_id": 3,
+        "sub_system_name": "OTA",
+        "error_id": 4,
+        "error_name": "Firmware for hub efr32",
+        "activated": "ok",
+        "message": "up2date",
+        "details": []
+    },
+    {
+        "sub_system_id": 3,
+        "sub_system_name": "OTA",
+        "error_id": 5,
+        "error_name": "Firmware for pulse",
+        "activated": "ok",
+        "message": "needs_update",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 1,
+        "error_name": "distribute status",
+        "activated": "error",
+        "message": "inactive_node",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 2,
+        "error_name": "upload state",
+        "activated": "error",
+        "message": "failed",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 3,
+        "error_name": "packet loss",
+        "activated": "unknown",
+        "message": "No packets was sent",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 4,
+        "error_name": "available",
+        "activated": "error",
+        "message": "Solar clamp not available",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 5,
+        "error_name": "rssi",
+        "activated": "ok",
+        "message": "RSSI -71.40",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 6,
+        "error_name": "battery voltage",
+        "activated": "error",
+        "message": "Battery voltage 0.00",
+        "details": []
+    },
+    {
+        "sub_system_id": 4,
+        "sub_system_name": "PULSE SOLAR",
+        "error_id": 7,
+        "error_name": "calibration status",
+        "activated": "ok",
+        "message": "Not available",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 1,
+        "error_name": "distribute status",
+        "activated": "error",
+        "message": "inactive_node",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 2,
+        "error_name": "upload state",
+        "activated": "error",
+        "message": "failed",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 3,
+        "error_name": "packet loss",
+        "activated": "unknown",
+        "message": "No packets was sent",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 4,
+        "error_name": "available",
+        "activated": "error",
+        "message": "Grid clamp not available",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 5,
+        "error_name": "rssi",
+        "activated": "ok",
+        "message": "RSSI -71.94",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 6,
+        "error_name": "battery voltage",
+        "activated": "error",
+        "message": "Battery voltage 0.00",
+        "details": []
+    },
+    {
+        "sub_system_id": 5,
+        "sub_system_name": "PULSE GRID",
+        "error_id": 7,
+        "error_name": "calibration status",
+        "activated": "ok",
+        "message": "Not available",
+        "details": []
+    },
+    {
+        "sub_system_id": 6,
+        "sub_system_name": "EFR_HUB",
+        "error_id": 1,
+        "error_name": "ac_voltage",
+        "activated": "ok",
+        "message": "AC voltage: 248.84 V",
+        "details": []
+    },
+    {
+        "sub_system_id": 6,
+        "sub_system_name": "EFR_HUB",
+        "error_id": 2,
+        "error_name": "frequency",
+        "activated": "ok",
+        "message": "Frequency: 49.95 Hz",
+        "details": []
+    }
+]

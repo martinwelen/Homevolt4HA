@@ -1,0 +1,394 @@
+{
+    "$type": "ems_data",
+    "ts": 1770968409,
+    "ems": [
+        {
+            "ecu_id": 9731192375880,
+            "ecu_host": "",
+            "ecu_version": "",
+            "error": 0,
+            "error_str": "No error",
+            "op_state": 1,
+            "op_state_str": "idle",
+            "ems_info": {
+                "protocol_version": 5,
+                "fw_version": "v31.4",
+                "rated_capacity": 13304,
+                "rated_power": 6000
+            },
+            "bms_info": [
+                {
+                    "fw_version": "v4-44-g1413a7d",
+                    "serial_number": "80000274099724441432",
+                    "rated_cap": 6652,
+                    "id": 0
+                },
+                {
+                    "fw_version": "v4-44-g1413a7d",
+                    "serial_number": "80000274099724441534",
+                    "rated_cap": 6652,
+                    "id": 1
+                }
+            ],
+            "inv_info": {
+                "fw_version": "V1.10-97.0",
+                "serial_number": "80000296089924450535"
+            },
+            "ems_config": {
+                "grid_code_preset": 9,
+                "grid_code_preset_str": "Sweden",
+                "control_timeout": true
+            },
+            "inv_config": {
+                "ffr_fstart_freq": 9900
+            },
+            "ems_control": {
+                "mode_sel": 1,
+                "mode_sel_str": "operational",
+                "pwr_ref": 0,
+                "freq_res_mode": 0,
+                "freq_res_pwr_fcr_n": 0,
+                "freq_res_pwr_fcr_d_up": 0,
+                "freq_res_pwr_fcr_d_down": 0,
+                "freq_res_pwr_ref_ffr": 0,
+                "act_pwr_ch_lim": 0,
+                "act_pwr_di_lim": 0,
+                "react_pwr_pos_limit": 7000,
+                "react_pwr_neg_limit": 7000,
+                "freq_test_seq": 0,
+                "data_usage": 0,
+                "allow_dfu": false
+            },
+            "ems_data": {
+                "timestamp_ms": 1770968408000,
+                "state": 4,
+                "state_str": "Throttled",
+                "info": 268,
+                "info_str": [
+                    "EMS_INFO_CONNECTED_TO_BACKEND",
+                    "EMS_INFO_RTC_SYNCRONIZED",
+                    "EMS_INFO_LOW_POWER_MODE"
+                ],
+                "warning": 64,
+                "warning_str": [
+                    "EMS_WARNING_UNDER_SOC_MIN_WARNING"
+                ],
+                "alarm": 0,
+                "alarm_str": [],
+                "phase_angle": 90,
+                "frequency": 49969,
+                "phase_seq": 1,
+                "power": -13,
+                "apparent_power": -13,
+                "reactive_power": 0,
+                "energy_produced": 3777576,
+                "energy_consumed": 4290436,
+                "sys_temp": 46,
+                "avail_cap": 12218,
+                "freq_res_state": 0,
+                "soc_avg": 0
+            },
+            "bms_data": [
+                {
+                    "energy_avail": 0,
+                    "cycle_count": 295,
+                    "soc": 0,
+                    "state": 5,
+                    "state_str": "Connected",
+                    "alarm": 0,
+                    "alarm_str": [],
+                    "tmin": 71,
+                    "tmax": 92
+                },
+                {
+                    "energy_avail": 0,
+                    "cycle_count": 290,
+                    "soc": 0,
+                    "state": 5,
+                    "state_str": "Connected",
+                    "alarm": 0,
+                    "alarm_str": [],
+                    "tmin": 61,
+                    "tmax": 83
+                }
+            ],
+            "ems_prediction": {
+                "avail_ch_pwr": 3528,
+                "avail_di_pwr": 0,
+                "avail_ch_energy": 12218,
+                "avail_di_energy": 0,
+                "avail_inv_ch_pwr": 3528,
+                "avail_inv_di_pwr": 0,
+                "avail_group_fuse_ch_pwr": 10848,
+                "avail_group_fuse_di_pwr": 10848
+            },
+            "ems_voltage": {
+                "l1": 2280,
+                "l2": 2265,
+                "l3": 2274,
+                "l1_l2": 3951,
+                "l2_l3": 3924,
+                "l3_l1": 3936
+            },
+            "ems_current": {
+                "l1": 0,
+                "l2": 0,
+                "l3": 0
+            },
+            "ems_aggregate": {
+                "imported_kwh": 3791.99,
+                "exported_kwh": 4350.4
+            },
+            "error_cnt": 0
+        }
+    ],
+    "aggregated": {
+        "ecu_id": 0,
+        "ecu_host": "",
+        "ecu_version": "",
+        "error": 0,
+        "error_str": "No error",
+        "op_state": 1,
+        "op_state_str": "idle",
+        "ems_info": {
+            "protocol_version": 5,
+            "fw_version": "v31.4",
+            "rated_capacity": 13304,
+            "rated_power": 6000
+        },
+        "bms_info": [
+            {
+                "fw_version": "v4-44-g1413a7d",
+                "serial_number": "80000274099724441432",
+                "rated_cap": 6652,
+                "id": 0
+            },
+            {
+                "fw_version": "v4-44-g1413a7d",
+                "serial_number": "80000274099724441534",
+                "rated_cap": 6652,
+                "id": 1
+            }
+        ],
+        "inv_info": {
+            "fw_version": "V1.10-97.0",
+            "serial_number": "80000296089924450535"
+        },
+        "ems_config": {
+            "grid_code_preset": 9,
+            "grid_code_preset_str": "Sweden",
+            "control_timeout": true
+        },
+        "inv_config": {
+            "ffr_fstart_freq": 9900
+        },
+        "ems_control": {
+            "mode_sel": 1,
+            "mode_sel_str": "operational",
+            "pwr_ref": 0,
+            "freq_res_mode": 0,
+            "freq_res_pwr_fcr_n": 0,
+            "freq_res_pwr_fcr_d_up": 0,
+            "freq_res_pwr_fcr_d_down": 0,
+            "freq_res_pwr_ref_ffr": 0,
+            "act_pwr_ch_lim": 0,
+            "act_pwr_di_lim": 0,
+            "react_pwr_pos_limit": 7000,
+            "react_pwr_neg_limit": 7000,
+            "freq_test_seq": 0,
+            "data_usage": 0,
+            "allow_dfu": false
+        },
+        "ems_data": {
+            "timestamp_ms": 1770968408000,
+            "state": 4,
+            "state_str": "Throttled",
+            "info": 268,
+            "info_str": [
+                "EMS_INFO_CONNECTED_TO_BACKEND",
+                "EMS_INFO_RTC_SYNCRONIZED",
+                "EMS_INFO_LOW_POWER_MODE"
+            ],
+            "warning": 64,
+            "warning_str": [
+                "EMS_WARNING_UNDER_SOC_MIN_WARNING"
+            ],
+            "alarm": 0,
+            "alarm_str": [],
+            "phase_angle": 90,
+            "frequency": 49969,
+            "phase_seq": 1,
+            "power": -13,
+            "apparent_power": -13,
+            "reactive_power": 0,
+            "energy_produced": 3777576,
+            "energy_consumed": 4290436,
+            "sys_temp": 46,
+            "avail_cap": 12218,
+            "freq_res_state": 0,
+            "soc_avg": 0
+        },
+        "bms_data": [
+            {
+                "energy_avail": 0,
+                "cycle_count": 295,
+                "soc": 0,
+                "state": 5,
+                "state_str": "Connected",
+                "alarm": 0,
+                "alarm_str": [],
+                "tmin": 71,
+                "tmax": 92
+            },
+            {
+                "energy_avail": 0,
+                "cycle_count": 290,
+                "soc": 0,
+                "state": 5,
+                "state_str": "Connected",
+                "alarm": 0,
+                "alarm_str": [],
+                "tmin": 61,
+                "tmax": 83
+            }
+        ],
+        "ems_prediction": {
+            "avail_ch_pwr": 3528,
+            "avail_di_pwr": 0,
+            "avail_ch_energy": 12218,
+            "avail_di_energy": 0,
+            "avail_inv_ch_pwr": 3528,
+            "avail_inv_di_pwr": 0,
+            "avail_group_fuse_ch_pwr": 10848,
+            "avail_group_fuse_di_pwr": 10848
+        },
+        "ems_voltage": {
+            "l1": 2280,
+            "l2": 2265,
+            "l3": 2274,
+            "l1_l2": 3951,
+            "l2_l3": 3924,
+            "l3_l1": 3936
+        },
+        "ems_current": {
+            "l1": 0,
+            "l2": 0,
+            "l3": 0
+        },
+        "ems_aggregate": {
+            "imported_kwh": 3791.99,
+            "exported_kwh": 4350.4
+        },
+        "error_cnt": 0
+    },
+    "sensors": [
+        {
+            "type": "unspecified",
+            "node_id": 0,
+            "euid": "0000000000000000",
+            "interface": 0,
+            "available": false,
+            "rssi": 0.0,
+            "average_rssi": 0.0,
+            "pdr": 0.0,
+            "phase": [
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                }
+            ],
+            "frequency": 0.0,
+            "total_power": 0,
+            "energy_imported": 14787.84,
+            "energy_exported": 8059.11,
+            "timestamp": 0,
+            "timestamp_str": ""
+        },
+        {
+            "type": "unspecified",
+            "node_id": 0,
+            "euid": "0000000000000000",
+            "interface": 0,
+            "available": false,
+            "rssi": 0.0,
+            "average_rssi": 0.0,
+            "pdr": 0.0,
+            "phase": [
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                }
+            ],
+            "frequency": 0.0,
+            "total_power": 0,
+            "energy_imported": 2748.22,
+            "energy_exported": 0.29,
+            "timestamp": 0,
+            "timestamp_str": ""
+        },
+        {
+            "type": "unspecified",
+            "node_id": 0,
+            "euid": "0000000000000000",
+            "interface": 0,
+            "available": false,
+            "rssi": 0.0,
+            "average_rssi": 0.0,
+            "pdr": 0.0,
+            "phase": [
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                },
+                {
+                    "voltage": 0.0,
+                    "amp": 0.0,
+                    "power": 0.0,
+                    "pf": 0.0
+                }
+            ],
+            "frequency": 0.0,
+            "total_power": 0,
+            "energy_imported": 5969.73,
+            "energy_exported": 16008.55,
+            "timestamp": 0,
+            "timestamp_str": ""
+        }
+    ]
+}

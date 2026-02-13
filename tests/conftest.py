@@ -8,8 +8,10 @@ because the real modules are already in sys.modules.
 
 from __future__ import annotations
 
+import enum
 import json
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -72,6 +74,83 @@ def _ensure_ha_stubs() -> None:
     ha_const.CONF_PORT = "port"  # type: ignore[attr-defined]
     ha_const.Platform = MagicMock()  # type: ignore[attr-defined]
     ha_const.Platform.SENSOR = "sensor"  # type: ignore[attr-defined]
+
+    # Unit constants used by sensor.py
+    ha_const.PERCENTAGE = "%"  # type: ignore[attr-defined]
+    ha_const.SIGNAL_STRENGTH_DECIBELS_MILLIWATT = "dBm"  # type: ignore[attr-defined]
+
+    # EntityCategory enum
+    class _EntityCategory(str, enum.Enum):
+        CONFIG = "config"
+        DIAGNOSTIC = "diagnostic"
+
+    ha_const.EntityCategory = _EntityCategory  # type: ignore[attr-defined]
+
+    # UnitOfPower
+    class _UnitOfPower(str, enum.Enum):
+        WATT = "W"
+        KILO_WATT = "kW"
+
+    ha_const.UnitOfPower = _UnitOfPower  # type: ignore[attr-defined]
+
+    # UnitOfEnergy
+    class _UnitOfEnergy(str, enum.Enum):
+        WATT_HOUR = "Wh"
+        KILO_WATT_HOUR = "kWh"
+
+    ha_const.UnitOfEnergy = _UnitOfEnergy  # type: ignore[attr-defined]
+
+    # UnitOfTemperature
+    class _UnitOfTemperature(str, enum.Enum):
+        CELSIUS = "\u00b0C"
+        FAHRENHEIT = "\u00b0F"
+
+    ha_const.UnitOfTemperature = _UnitOfTemperature  # type: ignore[attr-defined]
+
+    # UnitOfElectricPotential
+    class _UnitOfElectricPotential(str, enum.Enum):
+        VOLT = "V"
+        MILLIVOLT = "mV"
+
+    ha_const.UnitOfElectricPotential = _UnitOfElectricPotential  # type: ignore[attr-defined]
+
+    # UnitOfElectricCurrent
+    class _UnitOfElectricCurrent(str, enum.Enum):
+        AMPERE = "A"
+        MILLIAMPERE = "mA"
+
+    ha_const.UnitOfElectricCurrent = _UnitOfElectricCurrent  # type: ignore[attr-defined]
+
+    # UnitOfFrequency
+    class _UnitOfFrequency(str, enum.Enum):
+        HERTZ = "Hz"
+        GIGAHERTZ = "GHz"
+        MEGAHERTZ = "MHz"
+        KILOHERTZ = "kHz"
+
+    ha_const.UnitOfFrequency = _UnitOfFrequency  # type: ignore[attr-defined]
+
+    # UnitOfApparentPower
+    class _UnitOfApparentPower(str, enum.Enum):
+        VOLT_AMPERE = "VA"
+
+    ha_const.UnitOfApparentPower = _UnitOfApparentPower  # type: ignore[attr-defined]
+
+    # UnitOfReactivePower
+    class _UnitOfReactivePower(str, enum.Enum):
+        VOLT_AMPERE_REACTIVE = "var"
+
+    ha_const.UnitOfReactivePower = _UnitOfReactivePower  # type: ignore[attr-defined]
+
+    # UnitOfTime
+    class _UnitOfTime(str, enum.Enum):
+        SECONDS = "s"
+        MINUTES = "min"
+        HOURS = "h"
+        DAYS = "d"
+
+    ha_const.UnitOfTime = _UnitOfTime  # type: ignore[attr-defined]
+
     sys.modules["homeassistant.const"] = ha_const
 
     # --- homeassistant.config_entries ---
@@ -198,6 +277,21 @@ def _ensure_ha_stubs() -> None:
 
         ha_coord_mod.DataUpdateCoordinator = _StubDataUpdateCoordinator  # type: ignore[attr-defined]
 
+    if not hasattr(ha_coord_mod, "CoordinatorEntity"):
+
+        class _StubCoordinatorEntity:
+            """Minimal stand-in for CoordinatorEntity."""
+
+            has_entity_name = False
+
+            def __init__(self, coordinator):
+                self.coordinator = coordinator
+
+            def __class_getitem__(cls, item):
+                return cls
+
+        ha_coord_mod.CoordinatorEntity = _StubCoordinatorEntity  # type: ignore[attr-defined]
+
     sys.modules["homeassistant.helpers.update_coordinator"] = ha_coord_mod
 
     # --- homeassistant.helpers.aiohttp_client ---
@@ -218,6 +312,23 @@ def _ensure_ha_stubs() -> None:
         ha_devreg.DeviceInfo = dict  # type: ignore[attr-defined]
     sys.modules["homeassistant.helpers.device_registry"] = ha_devreg
 
+    # --- homeassistant.helpers.entity_platform ---
+    ha_entity_plat = sys.modules.get(
+        "homeassistant.helpers.entity_platform"
+    ) or ModuleType("homeassistant.helpers.entity_platform")
+    if not hasattr(ha_entity_plat, "AddEntitiesCallback"):
+        # AddEntitiesCallback is a type alias for Callable
+        ha_entity_plat.AddEntitiesCallback = Any  # type: ignore[attr-defined]
+    sys.modules["homeassistant.helpers.entity_platform"] = ha_entity_plat
+
+    # --- homeassistant.helpers.typing ---
+    ha_typing = sys.modules.get(
+        "homeassistant.helpers.typing"
+    ) or ModuleType("homeassistant.helpers.typing")
+    if not hasattr(ha_typing, "StateType"):
+        ha_typing.StateType = Any  # type: ignore[attr-defined]
+    sys.modules["homeassistant.helpers.typing"] = ha_typing
+
     # --- homeassistant.components ---
     if "homeassistant.components" not in sys.modules:
         sys.modules["homeassistant.components"] = ModuleType("homeassistant.components")
@@ -226,11 +337,56 @@ def _ensure_ha_stubs() -> None:
     ha_sensor = sys.modules.get(
         "homeassistant.components.sensor"
     ) or ModuleType("homeassistant.components.sensor")
-    if not hasattr(ha_sensor, "SensorEntity"):
-        ha_sensor.SensorEntity = MagicMock  # type: ignore[attr-defined]
-        ha_sensor.SensorEntityDescription = MagicMock  # type: ignore[attr-defined]
-        ha_sensor.SensorDeviceClass = MagicMock()  # type: ignore[attr-defined]
-        ha_sensor.SensorStateClass = MagicMock()  # type: ignore[attr-defined]
+    if not hasattr(ha_sensor, "SensorEntity") or isinstance(
+        ha_sensor.SensorEntity, MagicMock  # type: ignore[arg-type]
+    ):
+        # SensorDeviceClass enum
+        class _SensorDeviceClass(str, enum.Enum):
+            APPARENT_POWER = "apparent_power"
+            BATTERY = "battery"
+            CURRENT = "current"
+            DURATION = "duration"
+            ENERGY = "energy"
+            ENUM = "enum"
+            FREQUENCY = "frequency"
+            POWER = "power"
+            REACTIVE_POWER = "reactive_power"
+            SIGNAL_STRENGTH = "signal_strength"
+            TEMPERATURE = "temperature"
+            VOLTAGE = "voltage"
+
+        # SensorStateClass enum
+        class _SensorStateClass(str, enum.Enum):
+            MEASUREMENT = "measurement"
+            TOTAL = "total"
+            TOTAL_INCREASING = "total_increasing"
+
+        # SensorEntityDescription as a real dataclass (so it can be subclassed)
+        @dataclass(frozen=True)
+        class _SensorEntityDescription:
+            key: str = ""
+            translation_key: str | None = None
+            device_class: _SensorDeviceClass | None = None
+            state_class: _SensorStateClass | None = None
+            native_unit_of_measurement: str | None = None
+            suggested_display_precision: int | None = None
+            entity_category: Any = None
+            name: str | None = None
+
+        # SensorEntity class
+        class _SensorEntity:
+            entity_description: Any = None
+            _attr_unique_id: str | None = None
+
+            @property
+            def native_value(self) -> Any:
+                return None
+
+        ha_sensor.SensorEntity = _SensorEntity  # type: ignore[attr-defined]
+        ha_sensor.SensorEntityDescription = _SensorEntityDescription  # type: ignore[attr-defined]
+        ha_sensor.SensorDeviceClass = _SensorDeviceClass  # type: ignore[attr-defined]
+        ha_sensor.SensorStateClass = _SensorStateClass  # type: ignore[attr-defined]
+
     sys.modules["homeassistant.components.sensor"] = ha_sensor
 
 

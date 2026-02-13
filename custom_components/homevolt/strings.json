@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Homevolt",
+        "description": "Enter the connection details for your Homevolt battery system.",
+        "data": {
+          "host": "Host",
+          "password": "Password (optional)",
+          "port": "Port",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Homevolt Discovered",
+        "description": "A Homevolt battery system was found at {host}.",
+        "data": {
+          "password": "Password (optional)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Homevolt device",
+      "invalid_auth": "Invalid password",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This Homevolt device is already configured",
+      "cannot_connect": "Cannot connect to the discovered device"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Homevolt Options",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    }
+  }
+}

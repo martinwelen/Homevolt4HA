@@ -237,6 +237,14 @@ def _ensure_ha_stubs() -> None:
             pass
 
         ha_exc.ConfigEntryAuthFailed = _ConfigEntryAuthFailed  # type: ignore[attr-defined]
+
+    if not hasattr(ha_exc, "ConfigEntryNotReady"):
+
+        class _ConfigEntryNotReady(Exception):
+            pass
+
+        ha_exc.ConfigEntryNotReady = _ConfigEntryNotReady  # type: ignore[attr-defined]
+
     sys.modules["homeassistant.exceptions"] = ha_exc
 
     # --- homeassistant.helpers ---
@@ -271,6 +279,21 @@ def _ensure_ha_stubs() -> None:
                 self.config_entry = config_entry
                 self.update_interval = update_interval
                 self.data = None
+                self._listeners: dict = {}
+
+            async def async_config_entry_first_refresh(self) -> None:
+                """Simulate first refresh (calls _async_update_data).
+
+                Mirrors real HA behaviour: UpdateFailed -> ConfigEntryNotReady.
+                """
+                try:
+                    self.data = await self._async_update_data()
+                except ha_coord_mod.UpdateFailed as err:
+                    raise ha_exc.ConfigEntryNotReady(str(err)) from err
+
+            async def _async_update_data(self):
+                """Override in subclass."""
+                return None
 
             def __class_getitem__(cls, item):
                 return cls

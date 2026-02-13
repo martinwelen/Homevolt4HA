@@ -641,12 +641,12 @@ async def async_setup_entry(
                 HomevoltBmsSensor(coordinator, ecu_id, bms_idx, serial, desc)
             )
 
-    # --- CT clamp sensors ---
+    # --- CT clamp sensors (skip unconfigured/offline clamps) ---
     for sensor_idx, sensor_data in enumerate(data.ems.sensors):
         euid = sensor_data.euid
         sensor_type = sensor_data.type
         if not euid or euid == "0000000000000000":
-            euid = f"{ecu_id}_ct_{sensor_idx}"
+            continue
         for desc in CT_SENSORS:
             entities.append(
                 HomevoltCtSensor(

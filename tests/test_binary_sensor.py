@@ -16,6 +16,7 @@ from custom_components.homevolt.models import (
     ErrorReportEntry,
     NodeInfo,
     NodeMetrics,
+    ScheduleData,
 )
 from custom_components.homevolt.binary_sensor import (
     SYSTEM_BINARY_SENSORS,
@@ -52,9 +53,10 @@ def _make_coordinator_with_data() -> MagicMock:
         2: NodeMetrics.from_dict(_load_fixture("node_metrics_2_response.json")),
         3: NodeMetrics.from_dict(_load_fixture("node_metrics_3_response.json")),
     }
+    schedule = ScheduleData.from_dict(_load_fixture("schedule_response.json"))
     data = HomevoltData(
         ems=ems, status=status, error_report=error_report,
-        nodes=nodes, node_metrics=node_metrics,
+        nodes=nodes, node_metrics=node_metrics, schedule=schedule,
     )
 
     coordinator = MagicMock(spec=HomevoltCoordinator)
@@ -157,6 +159,32 @@ class TestSystemBinarySensors:
         sensor = HomevoltBinarySensor(coord, ECU_ID, desc)
         assert sensor._attr_unique_id == f"{ECU_ID}_mqtt_connected"
 
+    def test_schedule_local_mode_false(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SYSTEM_BINARY_SENSORS if d.key == "schedule_local_mode")
+        sensor = HomevoltBinarySensor(coord, ECU_ID, desc)
+        assert sensor.is_on is False
+
+    def test_schedule_local_mode_true(self):
+        coord = _make_coordinator_with_data()
+        coord.data.schedule.local_mode = True
+        desc = next(d for d in SYSTEM_BINARY_SENSORS if d.key == "schedule_local_mode")
+        sensor = HomevoltBinarySensor(coord, ECU_ID, desc)
+        assert sensor.is_on is True
+
+    def test_schedule_local_mode_when_schedule_none(self):
+        coord = _make_coordinator_with_data()
+        coord.data.schedule = None
+        desc = next(d for d in SYSTEM_BINARY_SENSORS if d.key == "schedule_local_mode")
+        sensor = HomevoltBinarySensor(coord, ECU_ID, desc)
+        assert sensor.is_on is None
+
+    def test_schedule_local_mode_unique_id(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SYSTEM_BINARY_SENSORS if d.key == "schedule_local_mode")
+        sensor = HomevoltBinarySensor(coord, ECU_ID, desc)
+        assert sensor._attr_unique_id == f"{ECU_ID}_schedule_local_mode"
+
 
 # ---------------------------------------------------------------------------
 # CT node binary sensor tests
@@ -218,11 +246,11 @@ class TestBinarySensorPlatformSetup:
 
         await async_setup_entry(MagicMock(), entry, capture_entities)
 
-        # System: 2 (wifi_connected, mqtt_connected)
+        # System: 3 (wifi_connected, mqtt_connected, schedule_local_mode)
         # CT: 2 configured clamps * 1 (ct_available) = 2
         # CT Node: 2 configured clamps * 2 (usb_powered, firmware_update) = 4
-        # Total: 8
-        assert len(entities) == 8
+        # Total: 9
+        assert len(entities) == 9
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

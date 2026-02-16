@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import logging
 from typing import Any
 
@@ -34,7 +35,16 @@ from homeassistant.helpers.typing import StateType
 
 from .coordinator import HomevoltCoordinator
 from .entity import HomevoltBmsEntity, HomevoltEntity, HomevoltSensorDeviceEntity
-from .models import BmsData, EmsDevice, HomevoltData, NodeInfo, NodeMetrics, SensorData
+from .models import (
+    BmsData,
+    EmsDevice,
+    HomevoltData,
+    NodeInfo,
+    NodeMetrics,
+    ScheduleData,
+    ScheduleEntry,
+    SensorData,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +79,14 @@ class HomevoltStatusSensorEntityDescription(SensorEntityDescription):
     """Describes a Homevolt status sensor entity."""
 
     value_fn: Callable[[HomevoltData], StateType] | None = None
+
+
+@dataclass(frozen=True)
+class HomevoltScheduleSensorEntityDescription(SensorEntityDescription):
+    """Describes a Homevolt schedule sensor entity."""
+
+    value_fn: Callable[[ScheduleData | None], StateType] | None = None
+    attr_fn: Callable[[ScheduleData | None], dict[str, Any] | None] | None = None
 
 
 @dataclass(frozen=True)
@@ -616,6 +634,99 @@ CT_NODE_SENSORS: tuple[HomevoltCtNodeSensorEntityDescription, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Schedule sensors
+# ---------------------------------------------------------------------------
+
+
+def _find_current_entry(schedule: ScheduleData | None) -> ScheduleEntry | None:
+    """Find the schedule entry that covers the current time."""
+    if schedule is None or not schedule.entries:
+        return None
+    now = int(datetime.now(tz=timezone.utc).timestamp())
+    for entry in schedule.entries:
+        if entry.from_ts <= now < entry.to_ts:
+            return entry
+    return None
+
+
+def _find_next_entry(schedule: ScheduleData | None) -> ScheduleEntry | None:
+    """Find the next future schedule entry with a different action."""
+    if schedule is None or not schedule.entries:
+        return None
+    now = int(datetime.now(tz=timezone.utc).timestamp())
+    current = _find_current_entry(schedule)
+    for entry in schedule.entries:
+        if entry.from_ts >= now:
+            if current is None or entry.type != current.type or entry.setpoint != current.setpoint:
+                return entry
+    return None
+
+
+def _schedule_current_action(schedule: ScheduleData | None) -> str | None:
+    """Return the current schedule action as a human-readable string."""
+    entry = _find_current_entry(schedule)
+    if entry is None:
+        return None
+    if entry.setpoint:
+        return f"{entry.type_name} ({entry.setpoint} W)"
+    return entry.type_name
+
+
+def _schedule_current_attrs(schedule: ScheduleData | None) -> dict[str, Any] | None:
+    """Return extra attributes for the current schedule action sensor."""
+    if schedule is None:
+        return None
+    entry = _find_current_entry(schedule)
+    attrs: dict[str, Any] = {"schedule_id": schedule.schedule_id}
+    if entry is not None:
+        attrs["type"] = entry.type
+        attrs["setpoint"] = entry.setpoint
+        attrs["from"] = datetime.fromtimestamp(entry.from_ts, tz=timezone.utc).isoformat()
+        attrs["to"] = datetime.fromtimestamp(entry.to_ts, tz=timezone.utc).isoformat()
+    attrs["schedule"] = [
+        {
+            "from": datetime.fromtimestamp(e.from_ts, tz=timezone.utc).isoformat(),
+            "to": datetime.fromtimestamp(e.to_ts, tz=timezone.utc).isoformat(),
+            "type": e.type_name,
+            "setpoint": e.setpoint,
+        }
+        for e in schedule.entries
+    ]
+    return attrs
+
+
+def _schedule_next_action(schedule: ScheduleData | None) -> str | None:
+    """Return the next schedule action as a human-readable string."""
+    entry = _find_next_entry(schedule)
+    if entry is None:
+        return None
+    time_str = datetime.fromtimestamp(entry.from_ts, tz=timezone.utc).strftime("%H:%M")
+    return f"{entry.type_name} at {time_str}"
+
+
+SCHEDULE_SENSORS: tuple[HomevoltScheduleSensorEntityDescription, ...] = (
+    HomevoltScheduleSensorEntityDescription(
+        key="schedule_current_action",
+        translation_key="schedule_current_action",
+        value_fn=_schedule_current_action,
+        attr_fn=_schedule_current_attrs,
+    ),
+    HomevoltScheduleSensorEntityDescription(
+        key="schedule_next_action",
+        translation_key="schedule_next_action",
+        value_fn=_schedule_next_action,
+    ),
+    HomevoltScheduleSensorEntityDescription(
+        key="schedule_entry_count",
+        translation_key="schedule_entry_count",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: len(s.entries) if s is not None else None,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # Diagnostic sensors (EntityCategory.DIAGNOSTIC)
 # ---------------------------------------------------------------------------
 
@@ -838,6 +949,37 @@ class HomevoltCtNodeSensor(HomevoltSensorDeviceEntity, SensorEntity):
         return self.entity_description.value_fn(metrics, node_info)
 
 
+class HomevoltScheduleSensor(HomevoltEntity, SensorEntity):
+    """Sensor for schedule data."""
+
+    entity_description: HomevoltScheduleSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: HomevoltCoordinator,
+        ecu_id: str,
+        description: HomevoltScheduleSensorEntityDescription,
+    ) -> None:
+        """Initialize a schedule sensor."""
+        super().__init__(coordinator, ecu_id)
+        self.entity_description = description
+        self._attr_unique_id = f"{ecu_id}_{description.key}"
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the sensor value."""
+        if self.entity_description.value_fn is None:
+            return None
+        return self.entity_description.value_fn(self.coordinator.data.schedule)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra state attributes."""
+        if self.entity_description.attr_fn is None:
+            return None
+        return self.entity_description.attr_fn(self.coordinator.data.schedule)
+
+
 # ---------------------------------------------------------------------------
 # Platform setup
 # ---------------------------------------------------------------------------
@@ -868,6 +1010,10 @@ async def async_setup_entry(
     # --- Status sensors ---
     for desc in STATUS_SENSORS:
         entities.append(HomevoltStatusSensor(coordinator, ecu_id, desc))
+
+    # --- Schedule sensors ---
+    for desc in SCHEDULE_SENSORS:
+        entities.append(HomevoltScheduleSensor(coordinator, ecu_id, desc))
 
     # --- BMS sensors (per battery module) ---
     aggregated = data.ems.aggregated

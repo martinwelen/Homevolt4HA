@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -16,6 +17,7 @@ from custom_components.homevolt.models import (
     ErrorReportEntry,
     NodeInfo,
     NodeMetrics,
+    ScheduleData,
 )
 from custom_components.homevolt.sensor import (
     SYSTEM_SENSORS,
@@ -26,11 +28,13 @@ from custom_components.homevolt.sensor import (
     CT_NODE_SENSORS,
     DIAGNOSTIC_SENSORS,
     STATUS_SENSORS,
+    SCHEDULE_SENSORS,
     HomevoltSystemSensor,
     HomevoltStatusSensor,
     HomevoltBmsSensor,
     HomevoltCtSensor,
     HomevoltCtNodeSensor,
+    HomevoltScheduleSensor,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -59,9 +63,10 @@ def _make_coordinator_with_data() -> MagicMock:
         2: NodeMetrics.from_dict(_load_fixture("node_metrics_2_response.json")),
         3: NodeMetrics.from_dict(_load_fixture("node_metrics_3_response.json")),
     }
+    schedule = ScheduleData.from_dict(_load_fixture("schedule_response.json"))
     data = HomevoltData(
         ems=ems, status=status, error_report=error_report,
-        nodes=nodes, node_metrics=node_metrics,
+        nodes=nodes, node_metrics=node_metrics, schedule=schedule,
     )
 
     coordinator = MagicMock(spec=HomevoltCoordinator)
@@ -592,11 +597,12 @@ class TestSensorPlatformSetup:
         # Count expected entities:
         # System: 19 + Voltage: 6 + Current: 3 + Diagnostic: 5 = 33 system sensors
         # Status: 4 (uptime, wifi_rssi, firmware_esp, firmware_efr)
+        # Schedule: 3 (current_action, next_action, entry_count)
         # BMS: 2 modules * 7 sensors = 14
         # CT: 2 configured clamps * 18 sensors = 36
-        # CT Node: 2 configured clamps * 5 sensors = 10
-        # Total: 33 + 4 + 14 + 36 + 10 = 97
-        assert len(entities) == 99
+        # CT Node: 2 configured clamps * 6 sensors = 12
+        # Total: 33 + 4 + 3 + 14 + 36 + 12 = 102
+        assert len(entities) == 102
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):
@@ -618,3 +624,133 @@ class TestSensorPlatformSetup:
         ct_entities = [e for e in entities if hasattr(e, '_euid')]
         for ent in ct_entities:
             assert ent._euid != "0000000000000000"
+
+
+# ---------------------------------------------------------------------------
+# Schedule sensor tests
+# ---------------------------------------------------------------------------
+
+class TestScheduleSensors:
+    """Test schedule sensors."""
+
+    def test_schedule_entry_count(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_entry_count")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == 6
+
+    def test_schedule_entry_count_none(self):
+        """When schedule is None, entry count returns None."""
+        coord = _make_coordinator_with_data()
+        coord.data.schedule = None
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_entry_count")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor.native_value is None
+
+    def test_schedule_current_action_during_grid_charge(self):
+        """When time falls within a grid-charge entry, show the action."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+
+        # Entry 1: from_ts=1739667600 to_ts=1739674800, type=3 (Grid Charge), setpoint=17250
+        mock_now = datetime.fromtimestamp(1739670000, tz=timezone.utc)
+        with patch("custom_components.homevolt.sensor.datetime") as mock_dt:
+            mock_dt.now.return_value = mock_now
+            mock_dt.fromtimestamp = datetime.fromtimestamp
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            assert sensor.native_value == "Grid Charge (17250 W)"
+
+    def test_schedule_current_action_during_idle(self):
+        """When time falls within an idle entry, show Idle."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+
+        # Entry 0: from_ts=1739664000 to_ts=1739667600, type=0 (Idle)
+        mock_now = datetime.fromtimestamp(1739665000, tz=timezone.utc)
+        with patch("custom_components.homevolt.sensor.datetime") as mock_dt:
+            mock_dt.now.return_value = mock_now
+            mock_dt.fromtimestamp = datetime.fromtimestamp
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            assert sensor.native_value == "Idle"
+
+    def test_schedule_current_action_no_match(self):
+        """When time is outside all entries, return None."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+
+        # Before all entries
+        mock_now = datetime.fromtimestamp(1739660000, tz=timezone.utc)
+        with patch("custom_components.homevolt.sensor.datetime") as mock_dt:
+            mock_dt.now.return_value = mock_now
+            mock_dt.fromtimestamp = datetime.fromtimestamp
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            assert sensor.native_value is None
+
+    def test_schedule_next_action_from_idle(self):
+        """Next action from idle should show the next non-idle entry."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_next_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+
+        # During entry 0 (idle), next should be entry 1 (grid charge)
+        mock_now = datetime.fromtimestamp(1739665000, tz=timezone.utc)
+        with patch("custom_components.homevolt.sensor.datetime") as mock_dt:
+            mock_dt.now.return_value = mock_now
+            mock_dt.fromtimestamp = datetime.fromtimestamp
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            value = sensor.native_value
+            assert value is not None
+            assert "Grid Charge" in value
+
+    def test_schedule_next_action_none_when_empty(self):
+        """When schedule is empty, next action returns None."""
+        coord = _make_coordinator_with_data()
+        coord.data.schedule = ScheduleData()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_next_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor.native_value is None
+
+    def test_schedule_current_action_attrs(self):
+        """Current action should include extra attributes."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+
+        mock_now = datetime.fromtimestamp(1739670000, tz=timezone.utc)
+        with patch("custom_components.homevolt.sensor.datetime") as mock_dt:
+            mock_dt.now.return_value = mock_now
+            mock_dt.fromtimestamp = datetime.fromtimestamp
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            attrs = sensor.extra_state_attributes
+            assert attrs is not None
+            assert attrs["schedule_id"] == "tibber_schedule_2026-02-16T00:00:00Z"
+            assert attrs["type"] == 3
+            assert attrs["setpoint"] == 17250
+            assert "from" in attrs
+            assert "to" in attrs
+            assert "schedule" in attrs
+            assert len(attrs["schedule"]) == 6
+
+    def test_schedule_current_action_attrs_none_schedule(self):
+        """When schedule is None, attrs returns None."""
+        coord = _make_coordinator_with_data()
+        coord.data.schedule = None
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor.extra_state_attributes is None
+
+    def test_schedule_no_extra_attrs_for_count(self):
+        """Entry count sensor has no extra attributes."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_entry_count")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor.extra_state_attributes is None
+
+    def test_schedule_unique_id(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SCHEDULE_SENSORS if d.key == "schedule_current_action")
+        sensor = HomevoltScheduleSensor(coord, ECU_ID, desc)
+        assert sensor._attr_unique_id == f"{ECU_ID}_schedule_current_action"

@@ -117,14 +117,18 @@
       "uptime": { "name": "Uptime" },
       "wifi_rssi": { "name": "WiFi RSSI" },
       "firmware_esp": { "name": "Firmware ESP" },
-      "firmware_efr": { "name": "Firmware EFR" }
+      "firmware_efr": { "name": "Firmware EFR" },
+      "schedule_current_action": { "name": "Schedule current action" },
+      "schedule_next_action": { "name": "Schedule next action" },
+      "schedule_entry_count": { "name": "Schedule entry count" }
     },
     "binary_sensor": {
       "ct_available": { "name": "Available" },
       "ct_usb_powered": { "name": "USB powered" },
       "ct_firmware_update_available": { "name": "Firmware update available" },
       "wifi_connected": { "name": "WiFi connected" },
-      "mqtt_connected": { "name": "MQTT connected" }
+      "mqtt_connected": { "name": "MQTT connected" },
+      "schedule_local_mode": { "name": "Schedule local mode" }
     }
   }
 }

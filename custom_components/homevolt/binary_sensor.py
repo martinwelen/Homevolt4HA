@@ -104,6 +104,12 @@ SYSTEM_BINARY_SENSORS: tuple[HomevoltBinarySensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.status.mqtt_status.connected if data.status is not None else None,
     ),
+    HomevoltBinarySensorEntityDescription(
+        key="schedule_local_mode",
+        translation_key="schedule_local_mode",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: data.schedule.local_mode if data.schedule is not None else None,
+    ),
 )
 
 

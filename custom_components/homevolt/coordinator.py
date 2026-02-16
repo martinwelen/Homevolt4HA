@@ -17,6 +17,7 @@ from .api import HomevoltApiClient, HomevoltAuthError, HomevoltConnectionError
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     ERROR_REPORT_POLL_INTERVAL,
+    NODES_POLL_INTERVAL,
     STATUS_POLL_INTERVAL,
 )
 from .models import HomevoltData
@@ -72,6 +73,24 @@ class HomevoltCoordinator(DataUpdateCoordinator[HomevoltData]):
                 combined.error_report = await self.client.async_get_error_report()
             elif self.data is not None:
                 combined.error_report = self.data.error_report
+
+            # Fetch nodes and node metrics every Nth cycle
+            if self._poll_count % NODES_POLL_INTERVAL == 0 or self.data is None:
+                combined.nodes = await self.client.async_get_nodes()
+                # Fetch metrics for each configured CT sensor node
+                for sensor in combined.ems.sensors:
+                    if sensor.euid and sensor.euid != "0000000000000000" and sensor.node_id:
+                        try:
+                            metrics = await self.client.async_get_node_metrics(sensor.node_id)
+                            combined.node_metrics[sensor.node_id] = metrics
+                        except Exception:
+                            _LOGGER.warning(
+                                "Failed to fetch node_metrics for node %s",
+                                sensor.node_id,
+                            )
+            elif self.data is not None:
+                combined.nodes = self.data.nodes
+                combined.node_metrics = self.data.node_metrics
 
         except HomevoltAuthError as err:
             raise ConfigEntryAuthFailed("Invalid credentials") from err

@@ -21,6 +21,8 @@ from custom_components.homevolt.models import (
     HomevoltData,
     HomevoltEmsResponse,
     HomevoltStatusResponse,
+    NodeInfo,
+    NodeMetrics,
 )
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -59,12 +61,34 @@ def error_report_response() -> list[ErrorReportEntry]:
 
 
 @pytest.fixture
-def mock_client(ems_response, status_response, error_report_response) -> MagicMock:
+def nodes_response() -> list[NodeInfo]:
+    """Return parsed nodes from fixture data."""
+    data = _load_fixture("nodes_response.json")
+    return [NodeInfo.from_dict(n) for n in data]
+
+
+@pytest.fixture
+def node_metrics_responses() -> dict[int, NodeMetrics]:
+    """Return parsed node metrics from fixture data."""
+    m2 = NodeMetrics.from_dict(_load_fixture("node_metrics_2_response.json"))
+    m3 = NodeMetrics.from_dict(_load_fixture("node_metrics_3_response.json"))
+    return {2: m2, 3: m3}
+
+
+@pytest.fixture
+def mock_client(
+    ems_response, status_response, error_report_response,
+    nodes_response, node_metrics_responses,
+) -> MagicMock:
     """Create a mock HomevoltApiClient with all methods returning fixture data."""
     client = MagicMock(spec=HomevoltApiClient)
     client.async_get_ems_data = AsyncMock(return_value=ems_response)
     client.async_get_status = AsyncMock(return_value=status_response)
     client.async_get_error_report = AsyncMock(return_value=error_report_response)
+    client.async_get_nodes = AsyncMock(return_value=nodes_response)
+    client.async_get_node_metrics = AsyncMock(
+        side_effect=lambda node_id: node_metrics_responses[node_id]
+    )
     return client
 
 
@@ -372,3 +396,62 @@ async def test_full_polling_scenario(coordinator, mock_client):
     assert mock_client.async_get_ems_data.call_count == 12
     assert mock_client.async_get_status.call_count == 2
     assert mock_client.async_get_error_report.call_count == 4
+
+
+# ---------------------------------------------------------------------------
+# Tests: Nodes and node metrics polling
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_first_fetch_gets_nodes_and_metrics(coordinator, mock_client):
+    """First fetch should fetch nodes and node_metrics for configured CT sensors."""
+    result = await coordinator._async_update_data()
+
+    mock_client.async_get_nodes.assert_called_once()
+    # EMS fixture has 2 configured sensors (node 2 and 3), so 2 calls
+    assert mock_client.async_get_node_metrics.call_count == 2
+    assert len(result.nodes) == 2
+    assert 2 in result.node_metrics
+    assert 3 in result.node_metrics
+    assert result.node_metrics[2].battery_voltage == pytest.approx(2.73)
+
+
+@pytest.mark.asyncio
+async def test_nodes_polled_every_10th_cycle(coordinator, mock_client):
+    """Nodes should be fetched on cycle 1 (None) and 10."""
+    for i in range(10):
+        result = await coordinator._async_update_data()
+        coordinator.data = result
+
+    assert mock_client.async_get_nodes.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_node_metrics_cached_between_polls(coordinator, mock_client):
+    """Node metrics should be cached between poll cycles."""
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+
+    mock_client.reset_mock()
+
+    second_result = await coordinator._async_update_data()
+    coordinator.data = second_result
+
+    mock_client.async_get_nodes.assert_not_called()
+    mock_client.async_get_node_metrics.assert_not_called()
+    assert second_result.nodes is first_result.nodes
+    assert second_result.node_metrics is first_result.node_metrics
+
+
+@pytest.mark.asyncio
+async def test_node_metrics_failure_non_fatal(coordinator, mock_client):
+    """Failure to fetch node_metrics should not prevent coordinator from returning data."""
+    mock_client.async_get_node_metrics.side_effect = Exception("Connection lost")
+
+    result = await coordinator._async_update_data()
+
+    assert isinstance(result, HomevoltData)
+    assert result.ems is not None
+    assert len(result.node_metrics) == 0  # No metrics due to failure
+    assert len(result.nodes) == 2  # Nodes still fetched

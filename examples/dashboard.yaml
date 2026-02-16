@@ -1,0 +1,263 @@
+# Homevolt Battery System — Example Lovelace Dashboard
+#
+# How to use:
+#   1. In Home Assistant, go to Settings > Dashboards > Add Dashboard
+#   2. Choose "New dashboard from scratch", give it a name
+#   3. Open the new dashboard, click the three-dot menu > Edit dashboard
+#   4. Click the three-dot menu again > Raw configuration editor
+#   5. Paste this entire file contents and save
+#
+# Notes:
+#   - Entity IDs assume default device names. If you renamed devices
+#     during setup, adjust the entity IDs accordingly.
+#   - CT clamp sections assume you have grid and solar clamps configured.
+#     Remove or comment out those sections if you don't have CT clamps.
+#   - Battery Module sections assume two BMS modules. Adjust if you have
+#     a different number.
+
+views:
+  - title: Homevolt
+    path: homevolt
+    icon: mdi:battery-charging
+    cards:
+      # ── Title ──────────────────────────────────────────────────
+      - type: markdown
+        content: |
+          # Homevolt Battery System
+
+      # ── System Overview ────────────────────────────────────────
+      - type: gauge
+        name: Battery State of Charge
+        entity: sensor.homevolt_battery_system_state_of_charge
+        min: 0
+        max: 100
+        severity:
+          green: 50
+          yellow: 20
+          red: 10
+        needle: true
+
+      - type: glance
+        title: System Overview
+        show_name: true
+        show_state: true
+        entities:
+          - entity: sensor.homevolt_battery_system_power
+            name: Power
+          - entity: sensor.homevolt_battery_system_state
+            name: State
+          - entity: sensor.homevolt_battery_system_status
+            name: Status
+          - entity: sensor.homevolt_battery_system_system_temperature
+            name: Temperature
+          - entity: sensor.homevolt_battery_system_grid_frequency
+            name: Grid Freq
+
+      # ── Energy ─────────────────────────────────────────────────
+      - type: entities
+        title: Energy
+        show_header_toggle: false
+        entities:
+          - entity: sensor.homevolt_battery_system_energy_produced
+            name: Produced
+            icon: mdi:solar-power
+          - entity: sensor.homevolt_battery_system_energy_consumed
+            name: Consumed
+            icon: mdi:lightning-bolt
+          - entity: sensor.homevolt_battery_system_energy_imported
+            name: Imported from Grid
+            icon: mdi:transmission-tower-import
+          - entity: sensor.homevolt_battery_system_energy_exported
+            name: Exported to Grid
+            icon: mdi:transmission-tower-export
+
+      # ── Grid & Voltage ─────────────────────────────────────────
+      - type: entities
+        title: Grid & Voltage
+        show_header_toggle: false
+        entities:
+          - type: section
+            label: Phase Voltages
+          - entity: sensor.homevolt_battery_system_voltage_l1
+            name: Voltage L1
+          - entity: sensor.homevolt_battery_system_voltage_l2
+            name: Voltage L2
+          - entity: sensor.homevolt_battery_system_voltage_l3
+            name: Voltage L3
+          - type: section
+            label: Phase Currents
+          - entity: sensor.homevolt_battery_system_current_l1
+            name: Current L1
+          - entity: sensor.homevolt_battery_system_current_l2
+            name: Current L2
+          - entity: sensor.homevolt_battery_system_current_l3
+            name: Current L3
+          - type: section
+            label: Line-to-Line Voltages
+          - entity: sensor.homevolt_battery_system_voltage_l1_l2
+            name: Voltage L1-L2
+          - entity: sensor.homevolt_battery_system_voltage_l2_l3
+            name: Voltage L2-L3
+          - entity: sensor.homevolt_battery_system_voltage_l3_l1
+            name: Voltage L3-L1
+
+      # ── Battery Modules ────────────────────────────────────────
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            title: Battery Module 1
+            show_header_toggle: false
+            entities:
+              - entity: sensor.battery_module_1_state_of_charge
+                name: SOC
+              - entity: sensor.battery_module_1_state
+                name: State
+              - entity: sensor.battery_module_1_min_temperature
+                name: Min Temp
+              - entity: sensor.battery_module_1_max_temperature
+                name: Max Temp
+              - entity: sensor.battery_module_1_cycle_count
+                name: Cycles
+              - entity: sensor.battery_module_1_energy_available
+                name: Energy Available
+              - entity: sensor.battery_module_1_alarm
+                name: Alarm
+
+          - type: entities
+            title: Battery Module 2
+            show_header_toggle: false
+            entities:
+              - entity: sensor.battery_module_2_state_of_charge
+                name: SOC
+              - entity: sensor.battery_module_2_state
+                name: State
+              - entity: sensor.battery_module_2_min_temperature
+                name: Min Temp
+              - entity: sensor.battery_module_2_max_temperature
+                name: Max Temp
+              - entity: sensor.battery_module_2_cycle_count
+                name: Cycles
+              - entity: sensor.battery_module_2_energy_available
+                name: Energy Available
+              - entity: sensor.battery_module_2_alarm
+                name: Alarm
+
+      # ── Grid CT Clamp ──────────────────────────────────────────
+      - type: entities
+        title: Grid CT Clamp
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.grid_sensor_available
+            name: Available
+          - entity: sensor.grid_sensor_power
+            name: Power
+          - entity: sensor.grid_sensor_energy_imported
+            name: Energy Imported
+          - entity: sensor.grid_sensor_energy_exported
+            name: Energy Exported
+          - type: section
+            label: Per-Phase Power
+          - entity: sensor.grid_sensor_power_l1
+            name: Power L1
+          - entity: sensor.grid_sensor_power_l2
+            name: Power L2
+          - entity: sensor.grid_sensor_power_l3
+            name: Power L3
+          - type: section
+            label: Per-Phase Voltage
+          - entity: sensor.grid_sensor_voltage_l1
+            name: Voltage L1
+          - entity: sensor.grid_sensor_voltage_l2
+            name: Voltage L2
+          - entity: sensor.grid_sensor_voltage_l3
+            name: Voltage L3
+          - type: section
+            label: Per-Phase Current
+          - entity: sensor.grid_sensor_current_l1
+            name: Current L1
+          - entity: sensor.grid_sensor_current_l2
+            name: Current L2
+          - entity: sensor.grid_sensor_current_l3
+            name: Current L3
+          - type: section
+            label: Signal Quality
+          - entity: sensor.grid_sensor_rssi
+            name: RSSI
+          - entity: sensor.grid_sensor_packet_delivery_rate
+            name: Packet Delivery Rate
+
+      # ── Solar CT Clamp ─────────────────────────────────────────
+      - type: entities
+        title: Solar CT Clamp
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.solar_sensor_available
+            name: Available
+          - entity: sensor.solar_sensor_power
+            name: Power
+          - entity: sensor.solar_sensor_energy_imported
+            name: Energy Imported
+          - entity: sensor.solar_sensor_energy_exported
+            name: Energy Exported
+          - type: section
+            label: Per-Phase Power
+          - entity: sensor.solar_sensor_power_l1
+            name: Power L1
+          - entity: sensor.solar_sensor_power_l2
+            name: Power L2
+          - entity: sensor.solar_sensor_power_l3
+            name: Power L3
+          - type: section
+            label: Per-Phase Voltage
+          - entity: sensor.solar_sensor_voltage_l1
+            name: Voltage L1
+          - entity: sensor.solar_sensor_voltage_l2
+            name: Voltage L2
+          - entity: sensor.solar_sensor_voltage_l3
+            name: Voltage L3
+          - type: section
+            label: Per-Phase Current
+          - entity: sensor.solar_sensor_current_l1
+            name: Current L1
+          - entity: sensor.solar_sensor_current_l2
+            name: Current L2
+          - entity: sensor.solar_sensor_current_l3
+            name: Current L3
+          - type: section
+            label: Signal Quality
+          - entity: sensor.solar_sensor_rssi
+            name: RSSI
+          - entity: sensor.solar_sensor_packet_delivery_rate
+            name: Packet Delivery Rate
+
+      # ── System Health ──────────────────────────────────────────
+      - type: entities
+        title: System Health
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.homevolt_battery_system_wifi_connected
+            name: WiFi Connected
+          - entity: sensor.homevolt_battery_system_wifi_rssi
+            name: WiFi Signal
+          - entity: binary_sensor.homevolt_battery_system_mqtt_connected
+            name: MQTT Connected
+          - entity: sensor.homevolt_battery_system_uptime
+            name: Uptime
+          - entity: sensor.homevolt_battery_system_error_count
+            name: Error Count
+          - type: section
+            label: Firmware
+          - entity: sensor.homevolt_battery_system_firmware_esp
+            name: ESP Firmware
+          - entity: sensor.homevolt_battery_system_firmware_efr
+            name: EFR Firmware
+          - type: section
+            label: Power Limits
+          - entity: sensor.homevolt_battery_system_available_charge_power
+            name: Available Charge Power
+          - entity: sensor.homevolt_battery_system_available_discharge_power
+            name: Available Discharge Power
+          - entity: sensor.homevolt_battery_system_rated_capacity
+            name: Rated Capacity
+          - entity: sensor.homevolt_battery_system_rated_power
+            name: Rated Power

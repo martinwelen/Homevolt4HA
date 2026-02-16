@@ -474,3 +474,21 @@ def status_fixture():
 def error_report_fixture():
     """Load error report fixture."""
     return json.loads((FIXTURES / "error_report_response.json").read_text())
+
+
+@pytest.fixture
+def nodes_fixture():
+    """Load nodes response fixture."""
+    return json.loads((FIXTURES / "nodes_response.json").read_text())
+
+
+@pytest.fixture
+def node_metrics_2_fixture():
+    """Load node_metrics response fixture for node 2."""
+    return json.loads((FIXTURES / "node_metrics_2_response.json").read_text())
+
+
+@pytest.fixture
+def node_metrics_3_fixture():
+    """Load node_metrics response fixture for node 3."""
+    return json.loads((FIXTURES / "node_metrics_3_response.json").read_text())

@@ -1,0 +1,32 @@
+{
+    "node": {
+        "node_id": 2,
+        "timestamp": 1771233836,
+        "node_version": 0,
+        "bootloader_version": 33554435,
+        "battery_voltage": 2.73,
+        "temperature": -2.28,
+        "avg_rssi": -49.01,
+        "avg_lqi": 255.0,
+        "radio_tx_power": 159,
+        "node_uptime": 6552787,
+        "meter_msg_count_sent": 301,
+        "meter_pkg_count_sent": 301,
+        "meter_msg_count_received": 301,
+        "meter_pkg_count_received": 301,
+        "time_in_em0_ms": 9581,
+        "time_in_em1_ms": 1039,
+        "time_in_em2_ms": 290455,
+        "meter_mode": 0,
+        "usb_power": false,
+        "timesync_clock_drift": 262144
+    },
+    "hub": {
+        "meter_pkg_count_sent": 0,
+        "meter_msg_count_sent": 0,
+        "meter_pkg_count_received": 301,
+        "meter_msg_count_received": 301,
+        "meter_corrupt_reading_count_received": 0
+    },
+    "packet_delivery_rate": 100.0
+}

@@ -17,6 +17,15 @@
         "data": {
           "password": "Password (optional)"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Homevolt",
+        "description": "Update the connection details for your Homevolt device.",
+        "data": {
+          "host": "Host",
+          "password": "Password (optional)",
+          "port": "Port"
+        }
       }
     },
     "error": {

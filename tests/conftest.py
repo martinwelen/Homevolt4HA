@@ -203,6 +203,22 @@ def _ensure_ha_stubs() -> None:
             def async_abort(self, **kwargs: Any) -> dict:
                 return {"type": "abort", **kwargs}
 
+            def _get_reconfigure_entry(self):
+                """Return the config entry being reconfigured."""
+                return getattr(self, "_reconfigure_entry", MagicMock())
+
+            def async_update_reload_and_abort(
+                self, entry, *, title=None, data=None, options=None
+            ) -> dict:
+                """Update config entry, schedule reload, and abort."""
+                return {
+                    "type": "abort",
+                    "reason": "reconfigure_successful",
+                    "title": title,
+                    "data": data,
+                    "options": options,
+                }
+
         class _AbortFlow(Exception):
             def __init__(self, reason: str) -> None:
                 self.reason = reason

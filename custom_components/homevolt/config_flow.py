@@ -151,6 +151,60 @@ class HomevoltConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"host": self._host},
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of host/port/password."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            host = user_input[CONF_HOST]
+            port = user_input.get(CONF_PORT, DEFAULT_PORT)
+            password = user_input.get(CONF_PASSWORD)
+
+            session = async_get_clientsession(self.hass)
+            client = HomevoltApiClient(
+                session=session, host=host, port=port, password=password
+            )
+
+            try:
+                await client.async_validate_connection()
+            except HomevoltAuthError:
+                errors["base"] = "invalid_auth"
+            except HomevoltConnectionError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected error during reconfigure")
+                errors["base"] = "unknown"
+            else:
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    title=f"Homevolt ({host})",
+                    data={
+                        CONF_HOST: host,
+                        CONF_PORT: port,
+                        CONF_PASSWORD: password,
+                    },
+                )
+
+        current_data = self._get_reconfigure_entry().data
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HOST, default=current_data.get(CONF_HOST, "")
+                    ): str,
+                    vol.Optional(CONF_PASSWORD): str,
+                    vol.Optional(
+                        CONF_PORT,
+                        default=current_data.get(CONF_PORT, DEFAULT_PORT),
+                    ): int,
+                }
+            ),
+            errors=errors,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):

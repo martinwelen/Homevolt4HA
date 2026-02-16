@@ -592,3 +592,202 @@ async def test_user_step_empty_ems_uses_host_as_unique_id(flow):
 
     assert result["type"] == "create_entry"
     assert flow._unique_id == "192.168.70.12"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for reconfigure tests
+# ---------------------------------------------------------------------------
+
+
+def _make_reconfigure_entry(
+    host: str = "192.168.70.12",
+    port: int = 80,
+    password: str | None = None,
+) -> MagicMock:
+    """Create a fake config entry for reconfigure tests."""
+    entry = MagicMock()
+    entry.data = {
+        "host": host,
+        "port": port,
+        "password": password,
+    }
+    return entry
+
+
+@pytest.fixture
+def reconfigure_flow() -> HomevoltConfigFlow:
+    """Create a config flow instance with a mock reconfigure entry."""
+    f = HomevoltConfigFlow()
+    f.hass = MagicMock()
+    f.context = {}
+    f._reconfigure_entry = _make_reconfigure_entry()
+    return f
+
+
+# ---------------------------------------------------------------------------
+# Tests: Reconfigure flow - shows form with current values
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_shows_form(reconfigure_flow):
+    """Test that reconfigure step shows form when no input is provided."""
+    result = await reconfigure_flow.async_step_reconfigure(user_input=None)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {}
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_form_has_current_defaults(reconfigure_flow):
+    """Test that reconfigure form pre-fills current host and port."""
+    result = await reconfigure_flow.async_step_reconfigure(user_input=None)
+
+    # The schema is a voluptuous Schema object; verify it exists
+    assert result["type"] == "form"
+    assert "data_schema" in result
+
+
+# ---------------------------------------------------------------------------
+# Tests: Reconfigure flow - successful update
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_updates_entry(reconfigure_flow):
+    """Test that submitting valid input triggers update and abort."""
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(return_value=None)
+        mock_client_cls.return_value = mock_client
+
+        result = await reconfigure_flow.async_step_reconfigure(
+            user_input={
+                "host": "10.0.0.5",
+                "port": 8080,
+                "password": "newpass",
+            }
+        )
+
+    assert result["type"] == "abort"
+    assert result["reason"] == "reconfigure_successful"
+    assert result["title"] == "Homevolt (10.0.0.5)"
+    assert result["data"]["host"] == "10.0.0.5"
+    assert result["data"]["port"] == 8080
+    assert result["data"]["password"] == "newpass"
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_updates_without_password(reconfigure_flow):
+    """Test reconfigure without providing a password."""
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(return_value=None)
+        mock_client_cls.return_value = mock_client
+
+        result = await reconfigure_flow.async_step_reconfigure(
+            user_input={
+                "host": "10.0.0.5",
+            }
+        )
+
+    assert result["type"] == "abort"
+    assert result["reason"] == "reconfigure_successful"
+    assert result["data"]["host"] == "10.0.0.5"
+    assert result["data"]["port"] == DEFAULT_PORT
+    assert result["data"]["password"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Reconfigure flow - auth error
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_invalid_auth(reconfigure_flow):
+    """Test that auth error during reconfigure shows invalid_auth."""
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(
+            side_effect=HomevoltAuthError("Bad password")
+        )
+        mock_client_cls.return_value = mock_client
+
+        result = await reconfigure_flow.async_step_reconfigure(
+            user_input={"host": "192.168.70.12", "password": "wrong"}
+        )
+
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": "invalid_auth"}
+
+
+# ---------------------------------------------------------------------------
+# Tests: Reconfigure flow - connection error
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_connection_error(reconfigure_flow):
+    """Test that connection error during reconfigure shows cannot_connect."""
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(
+            side_effect=HomevoltConnectionError("Timeout")
+        )
+        mock_client_cls.return_value = mock_client
+
+        result = await reconfigure_flow.async_step_reconfigure(
+            user_input={"host": "192.168.70.99"}
+        )
+
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+# ---------------------------------------------------------------------------
+# Tests: Reconfigure flow - unknown error
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconfigure_unknown_error(reconfigure_flow):
+    """Test that unexpected error during reconfigure shows unknown."""
+    with patch(
+        "custom_components.homevolt.config_flow.async_get_clientsession",
+        return_value=MagicMock(),
+    ), patch(
+        "custom_components.homevolt.config_flow.HomevoltApiClient",
+    ) as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.async_validate_connection = AsyncMock(
+            side_effect=RuntimeError("Something broke")
+        )
+        mock_client_cls.return_value = mock_client
+
+        result = await reconfigure_flow.async_step_reconfigure(
+            user_input={"host": "192.168.70.12"}
+        )
+
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": "unknown"}

@@ -14,12 +14,16 @@ from custom_components.homevolt.models import (
     HomevoltEmsResponse,
     HomevoltStatusResponse,
     ErrorReportEntry,
+    NodeInfo,
+    NodeMetrics,
 )
 from custom_components.homevolt.binary_sensor import (
     SYSTEM_BINARY_SENSORS,
     CT_BINARY_SENSORS,
+    CT_NODE_BINARY_SENSORS,
     HomevoltBinarySensor,
     HomevoltCtBinarySensor,
+    HomevoltCtNodeBinarySensor,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -43,7 +47,15 @@ def _make_coordinator_with_data() -> MagicMock:
         ErrorReportEntry.from_dict(e)
         for e in _load_fixture("error_report_response.json")
     ]
-    data = HomevoltData(ems=ems, status=status, error_report=error_report)
+    nodes = [NodeInfo.from_dict(n) for n in _load_fixture("nodes_response.json")]
+    node_metrics = {
+        2: NodeMetrics.from_dict(_load_fixture("node_metrics_2_response.json")),
+        3: NodeMetrics.from_dict(_load_fixture("node_metrics_3_response.json")),
+    }
+    data = HomevoltData(
+        ems=ems, status=status, error_report=error_report,
+        nodes=nodes, node_metrics=node_metrics,
+    )
 
     coordinator = MagicMock(spec=HomevoltCoordinator)
     coordinator.data = data
@@ -147,6 +159,44 @@ class TestSystemBinarySensors:
 
 
 # ---------------------------------------------------------------------------
+# CT node binary sensor tests
+# ---------------------------------------------------------------------------
+
+class TestCtNodeBinarySensors:
+    """Test CT clamp node binary sensors."""
+
+    def test_usb_powered_false(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_BINARY_SENSORS if d.key == "ct_usb_powered")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeBinarySensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.is_on is False
+
+    def test_firmware_update_not_available_node2(self):
+        """Node 2 version matches manifest -> no update."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_BINARY_SENSORS if d.key == "ct_firmware_update_available")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeBinarySensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.is_on is False
+
+    def test_firmware_update_available_node3(self):
+        """Node 3 version differs from manifest -> update available."""
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_BINARY_SENSORS if d.key == "ct_firmware_update_available")
+        euid = "a46dd4fffea284c2"
+        sensor = HomevoltCtNodeBinarySensor(coord, ECU_ID, 1, "solar", euid, 3, desc)
+        assert sensor.is_on is True
+
+    def test_missing_data_returns_none(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_BINARY_SENSORS if d.key == "ct_usb_powered")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeBinarySensor(coord, ECU_ID, 0, "grid", euid, 99, desc)
+        assert sensor.is_on is None
+
+
+# ---------------------------------------------------------------------------
 # Platform setup tests
 # ---------------------------------------------------------------------------
 
@@ -170,8 +220,9 @@ class TestBinarySensorPlatformSetup:
 
         # System: 2 (wifi_connected, mqtt_connected)
         # CT: 2 configured clamps * 1 (ct_available) = 2
-        # Total: 4
-        assert len(entities) == 4
+        # CT Node: 2 configured clamps * 2 (usb_powered, firmware_update) = 4
+        # Total: 8
+        assert len(entities) == 8
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

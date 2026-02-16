@@ -424,7 +424,9 @@ def _ensure_ha_stubs() -> None:
         class _BinarySensorDeviceClass(str, enum.Enum):
             CONNECTIVITY = "connectivity"
             MOTION = "motion"
+            PLUG = "plug"
             PROBLEM = "problem"
+            UPDATE = "update"
 
         @dataclass(frozen=True)
         class _BinarySensorEntityDescription:

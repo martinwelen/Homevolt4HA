@@ -78,9 +78,11 @@ class TestSystemSensors:
 
     def test_battery_soc(self):
         coord = _make_coordinator_with_data()
+        # Override soc_avg to test centi-percent conversion
+        coord.data.ems.aggregated.ems_data.soc_avg = 8590
         desc = next(d for d in SYSTEM_SENSORS if d.key == "battery_soc")
         sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
-        assert sensor.native_value == 0
+        assert sensor.native_value == pytest.approx(85.9)
 
     def test_battery_power(self):
         coord = _make_coordinator_with_data()
@@ -170,10 +172,12 @@ class TestBmsSensors:
 
     def test_bms_soc_module_0(self):
         coord = _make_coordinator_with_data()
+        # Override soc to test centi-percent conversion
+        coord.data.ems.aggregated.bms_data[0].soc = 5830
         desc = next(d for d in BMS_SENSORS if d.key == "bms_soc")
         serial = "80000274099724441432"
         sensor = HomevoltBmsSensor(coord, ECU_ID, 0, serial, desc)
-        assert sensor.native_value == 0
+        assert sensor.native_value == pytest.approx(58.3)
 
     def test_bms_cycle_count_module_1(self):
         coord = _make_coordinator_with_data()

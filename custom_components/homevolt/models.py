@@ -116,7 +116,7 @@ class EmsData:
     sys_temp: int = 0  # decicelsius (60 = 6.0 C)
     avail_cap: int = 0  # Wh
     freq_res_state: int = 0
-    soc_avg: int = 0  # percentage
+    soc_avg: int = 0  # centi-percent (divide by 100)
 
     @classmethod
     def from_dict(cls, data: dict) -> EmsData:
@@ -151,7 +151,7 @@ class BmsData:
 
     energy_avail: int = 0  # Wh
     cycle_count: int = 0
-    soc: int = 0  # percentage
+    soc: int = 0  # centi-percent (divide by 100)
     state: int = 0
     state_str: str = ""
     alarm: int = 0

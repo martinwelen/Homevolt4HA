@@ -101,7 +101,8 @@ SYSTEM_SENSORS: tuple[HomevoltSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        value_fn=lambda agg: agg.ems_data.soc_avg,
+        suggested_display_precision=1,
+        value_fn=lambda agg: agg.ems_data.soc_avg / 100,
     ),
     HomevoltSensorEntityDescription(
         key="battery_power",
@@ -341,7 +342,8 @@ BMS_SENSORS: tuple[HomevoltBmsSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        value_fn=lambda bms: bms.soc,
+        suggested_display_precision=1,
+        value_fn=lambda bms: bms.soc / 100,
     ),
     HomevoltBmsSensorEntityDescription(
         key="bms_state",

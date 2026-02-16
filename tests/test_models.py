@@ -3,10 +3,14 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from custom_components.homevolt.models import (
     HomevoltEmsResponse,
     HomevoltStatusResponse,
     ErrorReportEntry,
+    NodeMetrics,
+    NodeInfo,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -231,3 +235,62 @@ def test_bms_info_rated_cap():
     assert device.bms_info[1].rated_cap == 6652
     assert device.bms_info[0].id == 0
     assert device.bms_info[1].id == 1
+
+
+def test_parse_node_metrics():
+    """Test parsing /node_metrics.json response."""
+    data = json.loads((FIXTURES / "node_metrics_2_response.json").read_text())
+    metrics = NodeMetrics.from_dict(data)
+
+    assert metrics.node_id == 2
+    assert metrics.battery_voltage == pytest.approx(2.73)
+    assert metrics.temperature == pytest.approx(-2.28)
+    assert metrics.usb_power is False
+    assert metrics.node_uptime == 6552787
+    assert metrics.radio_tx_power == 159
+    assert metrics.packet_delivery_rate == pytest.approx(100.0)
+
+
+def test_parse_node_metrics_empty():
+    """Test NodeMetrics handles empty data gracefully."""
+    metrics = NodeMetrics.from_dict({})
+
+    assert metrics.node_id == 0
+    assert metrics.battery_voltage == 0.0
+    assert metrics.temperature == 0.0
+    assert metrics.usb_power is False
+    assert metrics.node_uptime == 0
+    assert metrics.packet_delivery_rate == 0.0
+
+
+def test_parse_nodes_response():
+    """Test parsing /nodes.json response list."""
+    data = json.loads((FIXTURES / "nodes_response.json").read_text())
+    nodes = [NodeInfo.from_dict(n) for n in data]
+
+    assert len(nodes) == 2
+    assert nodes[0].node_id == 2
+    assert nodes[0].eui == "a46dd4fffea23d6a"
+    assert nodes[0].version == "1200-373138d6"
+    assert nodes[0].ota_distribute_status == "up2date"
+    assert nodes[0].manifest_version == "1200-373138d6"
+    assert nodes[0].available is True
+
+    assert nodes[1].node_id == 3
+    assert nodes[1].eui == "a46dd4fffea284c2"
+    assert nodes[1].version == "1186-5236fb04"
+    assert nodes[1].ota_distribute_status == "firmware_unverified"
+    assert nodes[1].manifest_version == "1200-373138d6"
+
+
+def test_parse_node_info_empty():
+    """Test NodeInfo handles empty data gracefully."""
+    node = NodeInfo.from_dict({})
+
+    assert node.node_id == 0
+    assert node.eui == ""
+    assert node.version == ""
+    assert node.model == ""
+    assert node.available is False
+    assert node.ota_distribute_status == ""
+    assert node.manifest_version == ""

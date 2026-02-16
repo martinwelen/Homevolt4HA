@@ -503,9 +503,62 @@ class ErrorReportEntry:
 
 
 @dataclass
+class NodeMetrics:
+    """Metrics for a CT clamp mesh node from /node_metrics.json."""
+
+    node_id: int = 0
+    battery_voltage: float = 0.0
+    temperature: float = 0.0
+    node_uptime: int = 0
+    radio_tx_power: int = 0
+    usb_power: bool = False
+    packet_delivery_rate: float = 0.0
+
+    @classmethod
+    def from_dict(cls, data: dict) -> NodeMetrics:
+        node = data.get("node", {})
+        return cls(
+            node_id=node.get("node_id", 0),
+            battery_voltage=node.get("battery_voltage", 0.0),
+            temperature=node.get("temperature", 0.0),
+            node_uptime=node.get("node_uptime", 0),
+            radio_tx_power=node.get("radio_tx_power", 0),
+            usb_power=node.get("usb_power", False),
+            packet_delivery_rate=data.get("packet_delivery_rate", 0.0),
+        )
+
+
+@dataclass
+class NodeInfo:
+    """Node info from /nodes.json."""
+
+    node_id: int = 0
+    eui: str = ""
+    version: str = ""
+    model: str = ""
+    available: bool = False
+    ota_distribute_status: str = ""
+    manifest_version: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict) -> NodeInfo:
+        return cls(
+            node_id=data.get("node_id", 0),
+            eui=data.get("eui", ""),
+            version=data.get("version", ""),
+            model=data.get("model", ""),
+            available=data.get("available", False),
+            ota_distribute_status=data.get("ota_distribute_status", ""),
+            manifest_version=data.get("manifest_version", ""),
+        )
+
+
+@dataclass
 class HomevoltData:
     """Combined data from all API endpoints."""
 
     ems: HomevoltEmsResponse = field(default_factory=HomevoltEmsResponse)
     status: HomevoltStatusResponse | None = None
     error_report: list[ErrorReportEntry] = field(default_factory=list)
+    nodes: list[NodeInfo] = field(default_factory=list)
+    node_metrics: dict[int, NodeMetrics] = field(default_factory=dict)

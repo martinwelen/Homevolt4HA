@@ -99,6 +99,7 @@
       "ems_alarm": { "name": "EMS alarm" },
       "error_count": { "name": "Error count" },
       "ems_error": { "name": "EMS error" },
+      "ct_battery_level": { "name": "Battery level" },
       "ct_battery_voltage": { "name": "Battery voltage" },
       "ct_temperature": { "name": "Temperature" },
       "ct_node_uptime": { "name": "Node uptime" },

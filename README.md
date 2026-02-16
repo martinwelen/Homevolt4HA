@@ -7,7 +7,7 @@ A custom [Home Assistant](https://www.home-assistant.io/) integration for the **
 - **Local polling** -- communicates directly with your Homevolt EMS over your local network
 - **Automatic discovery** -- finds your Homevolt device via Zeroconf (mDNS)
 - **Dynamic hardware** -- automatically detects the number of BMS battery modules and CT clamp sensors
-- **105 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, and system status
+- **107 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, and system status
 - **Configurable scan interval** -- default 30 seconds, adjustable from 10 to 300 seconds
 - **Diagnostics** -- download diagnostics data from the integration page for troubleshooting
 
@@ -159,13 +159,14 @@ These sensors are created for each CT clamp sensor node detected. CT clamps are 
 | Power L1/L2/L3 | W | Per-phase power (3 sensors) |
 | Power factor L1/L2/L3 | -- | Per-phase power factor (3 sensors) |
 
-### CT clamp node sensors (5 per clamp)
+### CT clamp node sensors (6 per clamp)
 
-Diagnostic sensors from the CT clamp mesh network nodes, providing hardware health data.
+Sensors from the CT clamp mesh network nodes. Each CT node is powered by 2x AA batteries or USB.
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
-| Battery voltage | V | CT node coin cell battery voltage |
+| Battery level | % | Battery level (2x AA, 3.0V=100%, 1.8V=0%) |
+| Battery voltage | V | Raw battery voltage |
 | Temperature | C | CT node internal temperature |
 | Node uptime | s | Time since CT node last booted |
 | Firmware | -- | CT node firmware version |

@@ -401,6 +401,24 @@ class TestCtPhaseSensors:
 class TestCtNodeSensors:
     """Test CT clamp node sensors (battery, temp, firmware, OTA)."""
 
+    def test_ct_battery_level(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_battery_level")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        # 2.73V → (2.73-1.8)/(3.0-1.8)*100 = 77.5%
+        assert sensor.native_value == pytest.approx(77.5)
+
+    def test_ct_battery_level_clamped(self):
+        """Battery level clamps to 0-100 range."""
+        from custom_components.homevolt.sensor import _ct_battery_level
+        from custom_components.homevolt.models import NodeMetrics
+        low = NodeMetrics(node_id=1, battery_voltage=1.5)
+        assert _ct_battery_level(low, None) == 0.0
+        high = NodeMetrics(node_id=1, battery_voltage=3.5)
+        assert _ct_battery_level(high, None) == 100.0
+        assert _ct_battery_level(None, None) is None
+
     def test_ct_battery_voltage(self):
         coord = _make_coordinator_with_data()
         desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_battery_voltage")
@@ -574,7 +592,7 @@ class TestSensorPlatformSetup:
         # CT: 2 configured clamps * 18 sensors = 36
         # CT Node: 2 configured clamps * 5 sensors = 10
         # Total: 33 + 4 + 14 + 36 + 10 = 97
-        assert len(entities) == 97
+        assert len(entities) == 99
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

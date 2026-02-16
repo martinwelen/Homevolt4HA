@@ -550,7 +550,25 @@ CT_SENSORS: tuple[HomevoltCtSensorEntityDescription, ...] = (
 # CT node sensors (per CT clamp node, from /nodes.json + /node_metrics.json)
 # ---------------------------------------------------------------------------
 
+def _ct_battery_level(metrics: NodeMetrics | None, _info: NodeInfo | None) -> float | None:
+    """Convert 2xAA battery voltage to percentage (3.0V=100%, 1.8V=0%)."""
+    if metrics is None:
+        return None
+    voltage = metrics.battery_voltage
+    level = round(max(0.0, min(100.0, (voltage - 1.8) / (3.0 - 1.8) * 100.0)), 1)
+    return level
+
+
 CT_NODE_SENSORS: tuple[HomevoltCtNodeSensorEntityDescription, ...] = (
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_battery_level",
+        translation_key="ct_battery_level",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        value_fn=_ct_battery_level,
+    ),
     HomevoltCtNodeSensorEntityDescription(
         key="ct_battery_voltage",
         translation_key="ct_battery_voltage",

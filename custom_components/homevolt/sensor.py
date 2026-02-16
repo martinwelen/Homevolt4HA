@@ -389,9 +389,112 @@ CT_SENSORS: tuple[HomevoltCtSensorEntityDescription, ...] = (
         value_fn=lambda s: s.pdr,
     ),
     HomevoltCtSensorEntityDescription(
-        key="ct_available",
-        translation_key="ct_available",
-        value_fn=lambda s: "on" if s.available else "off",
+        key="ct_frequency",
+        translation_key="ct_frequency",
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfFrequency.HERTZ,
+        suggested_display_precision=2,
+        value_fn=lambda s: s.frequency,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_voltage_l1",
+        translation_key="ct_voltage_l1",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[0].voltage if len(s.phase) > 0 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_voltage_l2",
+        translation_key="ct_voltage_l2",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[1].voltage if len(s.phase) > 1 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_voltage_l3",
+        translation_key="ct_voltage_l3",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[2].voltage if len(s.phase) > 2 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_current_l1",
+        translation_key="ct_current_l1",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[0].amp if len(s.phase) > 0 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_current_l2",
+        translation_key="ct_current_l2",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[1].amp if len(s.phase) > 1 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_current_l3",
+        translation_key="ct_current_l3",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.phase[2].amp if len(s.phase) > 2 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_l1",
+        translation_key="ct_power_l1",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=lambda s: s.phase[0].power if len(s.phase) > 0 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_l2",
+        translation_key="ct_power_l2",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=lambda s: s.phase[1].power if len(s.phase) > 1 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_l3",
+        translation_key="ct_power_l3",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=lambda s: s.phase[2].power if len(s.phase) > 2 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_factor_l1",
+        translation_key="ct_power_factor_l1",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.phase[0].pf if len(s.phase) > 0 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_factor_l2",
+        translation_key="ct_power_factor_l2",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.phase[1].pf if len(s.phase) > 1 else None,
+    ),
+    HomevoltCtSensorEntityDescription(
+        key="ct_power_factor_l3",
+        translation_key="ct_power_factor_l3",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.phase[2].pf if len(s.phase) > 2 else None,
     ),
 )
 
@@ -450,26 +553,6 @@ STATUS_SENSORS: tuple[HomevoltStatusSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         value_fn=lambda data: data.status.wifi_status.rssi if data.status is not None else None,
-    ),
-    HomevoltStatusSensorEntityDescription(
-        key="wifi_connected",
-        translation_key="wifi_connected",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: (
-            "on" if data.status.wifi_status.connected else "off"
-        )
-        if data.status is not None
-        else None,
-    ),
-    HomevoltStatusSensorEntityDescription(
-        key="mqtt_connected",
-        translation_key="mqtt_connected",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: (
-            "on" if data.status.mqtt_status.connected else "off"
-        )
-        if data.status is not None
-        else None,
     ),
     HomevoltStatusSensorEntityDescription(
         key="firmware_esp",

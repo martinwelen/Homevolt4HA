@@ -160,10 +160,19 @@ def test_parse_sensor_phases():
     for sensor in sensors:
         assert len(sensor.phase) == 3
 
-    # All sensors are currently offline
-    for sensor in sensors:
-        assert sensor.available is False
-        assert sensor.type == "unspecified"
+    # First two sensors are online (grid + solar), third is unconfigured
+    assert sensors[0].available is True
+    assert sensors[0].type == "grid"
+    assert sensors[0].euid == "a46dd4fffea23d6a"
+    assert sensors[0].phase[0].voltage == 253.4
+
+    assert sensors[1].available is True
+    assert sensors[1].type == "solar"
+    assert sensors[1].euid == "a46dd4fffea284c2"
+
+    assert sensors[2].available is False
+    assert sensors[2].type == "unspecified"
+    assert sensors[2].euid == "0000000000000000"
 
 
 def test_parse_status_lte():

@@ -15,7 +15,7 @@ from .coordinator import HomevoltCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 # Python 3.9-compatible type alias (3.12 would use: type HomevoltConfigEntry = ...)
 HomevoltConfigEntry = ConfigEntry

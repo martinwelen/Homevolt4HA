@@ -283,76 +283,76 @@
     },
     "sensors": [
         {
-            "type": "unspecified",
-            "node_id": 0,
-            "euid": "0000000000000000",
-            "interface": 0,
-            "available": false,
-            "rssi": 0.0,
-            "average_rssi": 0.0,
-            "pdr": 0.0,
+            "type": "grid",
+            "node_id": 2,
+            "euid": "a46dd4fffea23d6a",
+            "interface": 1,
+            "available": true,
+            "rssi": -55.0,
+            "average_rssi": -54.0,
+            "pdr": 98.5,
             "phase": [
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.4,
+                    "amp": 16.9,
+                    "power": -2718.0,
+                    "pf": -0.64
                 },
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.4,
+                    "amp": 10.0,
+                    "power": -1389.0,
+                    "pf": -0.55
                 },
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.4,
+                    "amp": 1.4,
+                    "power": 186.0,
+                    "pf": 0.53
                 }
             ],
-            "frequency": 0.0,
-            "total_power": 0,
+            "frequency": 50.04,
+            "total_power": -3921,
             "energy_imported": 14787.84,
             "energy_exported": 8059.11,
-            "timestamp": 0,
-            "timestamp_str": ""
+            "timestamp": 1770968400,
+            "timestamp_str": "2026-02-16T12:00:00"
         },
         {
-            "type": "unspecified",
-            "node_id": 0,
-            "euid": "0000000000000000",
-            "interface": 0,
-            "available": false,
-            "rssi": 0.0,
-            "average_rssi": 0.0,
-            "pdr": 0.0,
+            "type": "solar",
+            "node_id": 3,
+            "euid": "a46dd4fffea284c2",
+            "interface": 1,
+            "available": true,
+            "rssi": -62.0,
+            "average_rssi": -61.0,
+            "pdr": 95.2,
             "phase": [
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.1,
+                    "amp": 5.2,
+                    "power": 1318.0,
+                    "pf": 1.0
                 },
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.0,
+                    "amp": 5.1,
+                    "power": 1290.0,
+                    "pf": 1.0
                 },
                 {
-                    "voltage": 0.0,
-                    "amp": 0.0,
-                    "power": 0.0,
-                    "pf": 0.0
+                    "voltage": 253.2,
+                    "amp": 5.0,
+                    "power": 1266.0,
+                    "pf": 1.0
                 }
             ],
-            "frequency": 0.0,
-            "total_power": 0,
+            "frequency": 50.04,
+            "total_power": 3874,
             "energy_imported": 2748.22,
             "energy_exported": 0.29,
-            "timestamp": 0,
-            "timestamp_str": ""
+            "timestamp": 1770968400,
+            "timestamp_str": "2026-02-16T12:00:00"
         },
         {
             "type": "unspecified",

@@ -74,6 +74,7 @@ def _ensure_ha_stubs() -> None:
     ha_const.CONF_PORT = "port"  # type: ignore[attr-defined]
     ha_const.Platform = MagicMock()  # type: ignore[attr-defined]
     ha_const.Platform.SENSOR = "sensor"  # type: ignore[attr-defined]
+    ha_const.Platform.BINARY_SENSOR = "binary_sensor"  # type: ignore[attr-defined]
 
     # Unit constants used by sensor.py
     ha_const.PERCENTAGE = "%"  # type: ignore[attr-defined]
@@ -411,6 +412,41 @@ def _ensure_ha_stubs() -> None:
         ha_sensor.SensorStateClass = _SensorStateClass  # type: ignore[attr-defined]
 
     sys.modules["homeassistant.components.sensor"] = ha_sensor
+
+    # --- homeassistant.components.binary_sensor ---
+    ha_bsensor = sys.modules.get(
+        "homeassistant.components.binary_sensor"
+    ) or ModuleType("homeassistant.components.binary_sensor")
+    if not hasattr(ha_bsensor, "BinarySensorEntity") or isinstance(
+        ha_bsensor.BinarySensorEntity, MagicMock  # type: ignore[arg-type]
+    ):
+
+        class _BinarySensorDeviceClass(str, enum.Enum):
+            CONNECTIVITY = "connectivity"
+            MOTION = "motion"
+            PROBLEM = "problem"
+
+        @dataclass(frozen=True)
+        class _BinarySensorEntityDescription:
+            key: str = ""
+            translation_key: str | None = None
+            device_class: _BinarySensorDeviceClass | None = None
+            entity_category: Any = None
+            name: str | None = None
+
+        class _BinarySensorEntity:
+            entity_description: Any = None
+            _attr_unique_id: str | None = None
+
+            @property
+            def is_on(self) -> bool | None:
+                return None
+
+        ha_bsensor.BinarySensorEntity = _BinarySensorEntity  # type: ignore[attr-defined]
+        ha_bsensor.BinarySensorEntityDescription = _BinarySensorEntityDescription  # type: ignore[attr-defined]
+        ha_bsensor.BinarySensorDeviceClass = _BinarySensorDeviceClass  # type: ignore[attr-defined]
+
+    sys.modules["homeassistant.components.binary_sensor"] = ha_bsensor
 
 
 # Run stubs at module level (before test collection imports test modules)

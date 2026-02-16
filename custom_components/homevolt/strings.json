@@ -76,17 +76,32 @@
       "ct_energy_exported": { "name": "Energy exported" },
       "ct_rssi": { "name": "RSSI" },
       "ct_pdr": { "name": "Packet delivery rate" },
-      "ct_available": { "name": "Available" },
+      "ct_frequency": { "name": "Frequency" },
+      "ct_voltage_l1": { "name": "Voltage L1" },
+      "ct_voltage_l2": { "name": "Voltage L2" },
+      "ct_voltage_l3": { "name": "Voltage L3" },
+      "ct_current_l1": { "name": "Current L1" },
+      "ct_current_l2": { "name": "Current L2" },
+      "ct_current_l3": { "name": "Current L3" },
+      "ct_power_l1": { "name": "Power L1" },
+      "ct_power_l2": { "name": "Power L2" },
+      "ct_power_l3": { "name": "Power L3" },
+      "ct_power_factor_l1": { "name": "Power factor L1" },
+      "ct_power_factor_l2": { "name": "Power factor L2" },
+      "ct_power_factor_l3": { "name": "Power factor L3" },
       "ems_info": { "name": "EMS info" },
       "ems_warning": { "name": "EMS warning" },
       "ems_alarm": { "name": "EMS alarm" },
       "error_count": { "name": "Error count" },
       "uptime": { "name": "Uptime" },
       "wifi_rssi": { "name": "WiFi RSSI" },
-      "wifi_connected": { "name": "WiFi connected" },
-      "mqtt_connected": { "name": "MQTT connected" },
       "firmware_esp": { "name": "Firmware ESP" },
       "firmware_efr": { "name": "Firmware EFR" }
+    },
+    "binary_sensor": {
+      "ct_available": { "name": "Available" },
+      "wifi_connected": { "name": "WiFi connected" },
+      "mqtt_connected": { "name": "MQTT connected" }
     }
   }
 }

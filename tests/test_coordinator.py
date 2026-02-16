@@ -23,6 +23,7 @@ from custom_components.homevolt.models import (
     HomevoltStatusResponse,
     NodeInfo,
     NodeMetrics,
+    ScheduleData,
 )
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -76,9 +77,15 @@ def node_metrics_responses() -> dict[int, NodeMetrics]:
 
 
 @pytest.fixture
+def schedule_response() -> ScheduleData:
+    """Return a parsed schedule response from fixture data."""
+    return ScheduleData.from_dict(_load_fixture("schedule_response.json"))
+
+
+@pytest.fixture
 def mock_client(
     ems_response, status_response, error_report_response,
-    nodes_response, node_metrics_responses,
+    nodes_response, node_metrics_responses, schedule_response,
 ) -> MagicMock:
     """Create a mock HomevoltApiClient with all methods returning fixture data."""
     client = MagicMock(spec=HomevoltApiClient)
@@ -89,6 +96,7 @@ def mock_client(
     client.async_get_node_metrics = AsyncMock(
         side_effect=lambda node_id: node_metrics_responses[node_id]
     )
+    client.async_get_schedule = AsyncMock(return_value=schedule_response)
     return client
 
 
@@ -531,3 +539,70 @@ async def test_no_event_when_unchanged(coordinator, mock_hass):
     coordinator.data = second_result
 
     mock_hass.bus.async_fire.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Schedule polling
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_first_fetch_gets_schedule(coordinator, mock_client):
+    """First fetch should fetch schedule data."""
+    result = await coordinator._async_update_data()
+
+    mock_client.async_get_schedule.assert_called_once()
+    assert result.schedule is not None
+    assert len(result.schedule.entries) == 6
+
+
+@pytest.mark.asyncio
+async def test_schedule_polled_every_10th_cycle(coordinator, mock_client):
+    """Schedule should be fetched on cycle 1 (None) and 10."""
+    for i in range(10):
+        result = await coordinator._async_update_data()
+        coordinator.data = result
+
+    assert mock_client.async_get_schedule.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_schedule_cached_between_polls(coordinator, mock_client):
+    """Schedule should be cached between poll cycles."""
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+
+    mock_client.reset_mock()
+
+    second_result = await coordinator._async_update_data()
+    coordinator.data = second_result
+
+    mock_client.async_get_schedule.assert_not_called()
+    assert second_result.schedule is first_result.schedule
+
+
+@pytest.mark.asyncio
+async def test_schedule_failure_non_fatal(coordinator, mock_client):
+    """Failure to fetch schedule should not prevent coordinator from returning data."""
+    mock_client.async_get_schedule.side_effect = Exception("Connection lost")
+
+    result = await coordinator._async_update_data()
+
+    assert isinstance(result, HomevoltData)
+    assert result.ems is not None
+    assert result.schedule is None
+
+
+@pytest.mark.asyncio
+async def test_schedule_failure_preserves_cached(coordinator, mock_client):
+    """Schedule failure on subsequent poll should preserve cached data."""
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+    original_schedule = first_result.schedule
+
+    # Force schedule poll on next cycle
+    coordinator._poll_count = 9  # next will be 10 (divisible by 10)
+    mock_client.async_get_schedule.side_effect = Exception("Timeout")
+
+    second_result = await coordinator._async_update_data()
+    assert second_result.schedule is original_schedule

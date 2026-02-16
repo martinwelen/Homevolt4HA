@@ -18,6 +18,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     ERROR_REPORT_POLL_INTERVAL,
     NODES_POLL_INTERVAL,
+    SCHEDULE_POLL_INTERVAL,
     STATUS_POLL_INTERVAL,
 )
 from .models import HomevoltData
@@ -91,6 +92,17 @@ class HomevoltCoordinator(DataUpdateCoordinator[HomevoltData]):
             elif self.data is not None:
                 combined.nodes = self.data.nodes
                 combined.node_metrics = self.data.node_metrics
+
+            # Fetch schedule every Nth cycle (non-fatal)
+            if self._poll_count % SCHEDULE_POLL_INTERVAL == 0 or self.data is None:
+                try:
+                    combined.schedule = await self.client.async_get_schedule()
+                except Exception:
+                    _LOGGER.warning("Failed to fetch schedule data")
+                    if self.data is not None:
+                        combined.schedule = self.data.schedule
+            elif self.data is not None:
+                combined.schedule = self.data.schedule
 
             # Fire events when alarm/warning/info state changes
             if self.data is not None:

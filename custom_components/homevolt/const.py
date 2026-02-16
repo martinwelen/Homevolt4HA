@@ -27,6 +27,7 @@ DEFAULT_READ_TIMEOUT: Final = 20
 STATUS_POLL_INTERVAL: Final = 10  # Every 10th cycle (~5 min at 30s)
 ERROR_REPORT_POLL_INTERVAL: Final = 4  # Every 4th cycle (~2 min at 30s)
 NODES_POLL_INTERVAL: Final = 10  # Every 10th cycle (~5 min at 30s)
+SCHEDULE_POLL_INTERVAL: Final = 10  # Every 10th cycle (~5 min at 30s)
 
 # Manufacturer info
 MANUFACTURER: Final = "Tibber / Polarium"

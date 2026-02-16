@@ -15,6 +15,7 @@ from .const import (
     ENDPOINT_ERROR_REPORT,
     ENDPOINT_NODE_METRICS,
     ENDPOINT_NODES,
+    ENDPOINT_SCHEDULE,
     ENDPOINT_STATUS,
 )
 from .models import (
@@ -23,6 +24,7 @@ from .models import (
     HomevoltStatusResponse,
     NodeInfo,
     NodeMetrics,
+    ScheduleData,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,6 +141,11 @@ class HomevoltApiClient:
         """Fetch node metrics from /node_metrics.json?node_id={id}."""
         data = await self._request(f"{ENDPOINT_NODE_METRICS}?node_id={node_id}")
         return NodeMetrics.from_dict(data)
+
+    async def async_get_schedule(self) -> ScheduleData:
+        """Fetch schedule from /schedule.json."""
+        data = await self._request(ENDPOINT_SCHEDULE)
+        return ScheduleData.from_dict(data)
 
     async def async_validate_connection(self) -> HomevoltEmsResponse:
         """Validate connectivity by fetching EMS data. Used in config flow."""

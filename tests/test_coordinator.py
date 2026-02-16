@@ -455,3 +455,79 @@ async def test_node_metrics_failure_non_fatal(coordinator, mock_client):
     assert result.ems is not None
     assert len(result.node_metrics) == 0  # No metrics due to failure
     assert len(result.nodes) == 2  # Nodes still fetched
+
+
+# ---------------------------------------------------------------------------
+# Tests: Event firing on alarm/warning/info changes
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_alarm_event_fired_on_change(coordinator, mock_hass, mock_client, ems_response):
+    """When alarm_str changes between polls, a homevolt_alarm event should fire."""
+    mock_hass.bus.async_fire = MagicMock()
+
+    # First fetch: baseline (no event because self.data is None)
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+    mock_hass.bus.async_fire.assert_not_called()
+
+    # Modify the alarm_str for the second fetch
+    import copy
+    modified_ems = copy.deepcopy(ems_response)
+    modified_ems.aggregated.ems_data.alarm_str = ["BMS_OVER_VOLTAGE"]
+    mock_client.async_get_ems_data = AsyncMock(return_value=modified_ems)
+    mock_client.reset_mock()
+    mock_client.async_get_ems_data = AsyncMock(return_value=modified_ems)
+
+    # Second fetch: alarm changed -> event fires
+    second_result = await coordinator._async_update_data()
+    coordinator.data = second_result
+
+    mock_hass.bus.async_fire.assert_any_call(
+        "homevolt_alarm",
+        {"previous": first_result.ems.aggregated.ems_data.alarm_str, "current": ["BMS_OVER_VOLTAGE"]},
+    )
+
+
+@pytest.mark.asyncio
+async def test_warning_event_fired_on_change(coordinator, mock_hass, mock_client, ems_response):
+    """When warning_str changes between polls, a homevolt_warning event should fire."""
+    mock_hass.bus.async_fire = MagicMock()
+
+    # First fetch: baseline
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+    mock_hass.bus.async_fire.assert_not_called()
+
+    # Modify the warning_str for the second fetch
+    import copy
+    modified_ems = copy.deepcopy(ems_response)
+    modified_ems.aggregated.ems_data.warning_str = ["LOW_BATTERY"]
+    mock_client.async_get_ems_data = AsyncMock(return_value=modified_ems)
+
+    # Second fetch: warning changed -> event fires
+    second_result = await coordinator._async_update_data()
+    coordinator.data = second_result
+
+    mock_hass.bus.async_fire.assert_any_call(
+        "homevolt_warning",
+        {"previous": first_result.ems.aggregated.ems_data.warning_str, "current": ["LOW_BATTERY"]},
+    )
+
+
+@pytest.mark.asyncio
+async def test_no_event_when_unchanged(coordinator, mock_hass):
+    """When alarm/warning/info stay the same, no events should fire."""
+    mock_hass.bus.async_fire = MagicMock()
+
+    # First fetch: baseline
+    first_result = await coordinator._async_update_data()
+    coordinator.data = first_result
+    mock_hass.bus.async_fire.assert_not_called()
+
+    # Second fetch: identical data -> no events
+    second_result = await coordinator._async_update_data()
+    coordinator.data = second_result
+
+    mock_hass.bus.async_fire.assert_not_called()

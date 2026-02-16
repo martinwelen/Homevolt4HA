@@ -92,6 +92,26 @@ class HomevoltCoordinator(DataUpdateCoordinator[HomevoltData]):
                 combined.nodes = self.data.nodes
                 combined.node_metrics = self.data.node_metrics
 
+            # Fire events when alarm/warning/info state changes
+            if self.data is not None:
+                prev = self.data.ems.aggregated.ems_data
+                curr = combined.ems.aggregated.ems_data
+                if prev.alarm_str != curr.alarm_str:
+                    self.hass.bus.async_fire(
+                        "homevolt_alarm",
+                        {"previous": prev.alarm_str, "current": curr.alarm_str},
+                    )
+                if prev.warning_str != curr.warning_str:
+                    self.hass.bus.async_fire(
+                        "homevolt_warning",
+                        {"previous": prev.warning_str, "current": curr.warning_str},
+                    )
+                if prev.info_str != curr.info_str:
+                    self.hass.bus.async_fire(
+                        "homevolt_info",
+                        {"previous": prev.info_str, "current": curr.info_str},
+                    )
+
         except HomevoltAuthError as err:
             raise ConfigEntryAuthFailed("Invalid credentials") from err
         except HomevoltConnectionError as err:

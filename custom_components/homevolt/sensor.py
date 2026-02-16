@@ -34,7 +34,7 @@ from homeassistant.helpers.typing import StateType
 
 from .coordinator import HomevoltCoordinator
 from .entity import HomevoltBmsEntity, HomevoltEntity, HomevoltSensorDeviceEntity
-from .models import BmsData, EmsDevice, HomevoltData, SensorData
+from .models import BmsData, EmsDevice, HomevoltData, NodeInfo, NodeMetrics, SensorData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +69,13 @@ class HomevoltStatusSensorEntityDescription(SensorEntityDescription):
     """Describes a Homevolt status sensor entity."""
 
     value_fn: Callable[[HomevoltData], StateType] | None = None
+
+
+@dataclass(frozen=True)
+class HomevoltCtNodeSensorEntityDescription(SensorEntityDescription):
+    """Describes a Homevolt CT node sensor entity."""
+
+    value_fn: Callable[[NodeMetrics | None, NodeInfo | None], StateType] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -500,6 +507,54 @@ CT_SENSORS: tuple[HomevoltCtSensorEntityDescription, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# CT node sensors (per CT clamp node, from /nodes.json + /node_metrics.json)
+# ---------------------------------------------------------------------------
+
+CT_NODE_SENSORS: tuple[HomevoltCtNodeSensorEntityDescription, ...] = (
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_battery_voltage",
+        translation_key="ct_battery_voltage",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=2,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m, n: m.battery_voltage if m is not None else None,
+    ),
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_temperature",
+        translation_key="ct_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m, n: m.temperature if m is not None else None,
+    ),
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_node_uptime",
+        translation_key="ct_node_uptime",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m, n: m.node_uptime if m is not None else None,
+    ),
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_firmware",
+        translation_key="ct_firmware",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m, n: n.version if n is not None else None,
+    ),
+    HomevoltCtNodeSensorEntityDescription(
+        key="ct_ota_status",
+        translation_key="ct_ota_status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m, n: n.ota_distribute_status if n is not None else None,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # Diagnostic sensors (EntityCategory.DIAGNOSTIC)
 # ---------------------------------------------------------------------------
 
@@ -682,6 +737,40 @@ class HomevoltCtSensor(HomevoltSensorDeviceEntity, SensorEntity):
         return self.entity_description.value_fn(sensors[self._sensor_index])
 
 
+class HomevoltCtNodeSensor(HomevoltSensorDeviceEntity, SensorEntity):
+    """Sensor for CT clamp node data (battery, temperature, firmware)."""
+
+    entity_description: HomevoltCtNodeSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: HomevoltCoordinator,
+        ecu_id: str,
+        sensor_index: int,
+        sensor_type: str,
+        euid: str,
+        node_id: int,
+        description: HomevoltCtNodeSensorEntityDescription,
+    ) -> None:
+        """Initialize a CT node sensor."""
+        super().__init__(coordinator, ecu_id, sensor_index, sensor_type, euid)
+        self._node_id = node_id
+        self.entity_description = description
+        self._attr_unique_id = f"{euid}_{description.key}"
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the sensor value."""
+        if self.entity_description.value_fn is None:
+            return None
+        metrics = self.coordinator.data.node_metrics.get(self._node_id)
+        node_info = next(
+            (n for n in self.coordinator.data.nodes if n.node_id == self._node_id),
+            None,
+        )
+        return self.entity_description.value_fn(metrics, node_info)
+
+
 # ---------------------------------------------------------------------------
 # Platform setup
 # ---------------------------------------------------------------------------
@@ -736,13 +825,14 @@ async def async_setup_entry(
                     coordinator, ecu_id, sensor_idx, sensor_type, euid, desc
                 )
             )
+        # CT node sensors (battery voltage, temperature, firmware, etc.)
+        if sensor_data.node_id:
+            for desc in CT_NODE_SENSORS:
+                entities.append(
+                    HomevoltCtNodeSensor(
+                        coordinator, ecu_id, sensor_idx, sensor_type, euid,
+                        sensor_data.node_id, desc,
+                    )
+                )
 
     async_add_entities(entities)
-    _LOGGER.debug(
-        "Added %d Homevolt sensor entities (%d system, %d status, %d BMS, %d CT)",
-        len(entities),
-        len(all_system_descs),
-        len(STATUS_SENSORS),
-        len(aggregated.bms_info) * len(BMS_SENSORS),
-        len(data.ems.sensors) * len(CT_SENSORS),
-    )

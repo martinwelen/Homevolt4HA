@@ -14,6 +14,8 @@ from custom_components.homevolt.models import (
     HomevoltEmsResponse,
     HomevoltStatusResponse,
     ErrorReportEntry,
+    NodeInfo,
+    NodeMetrics,
 )
 from custom_components.homevolt.sensor import (
     SYSTEM_SENSORS,
@@ -21,12 +23,14 @@ from custom_components.homevolt.sensor import (
     CURRENT_SENSORS,
     BMS_SENSORS,
     CT_SENSORS,
+    CT_NODE_SENSORS,
     DIAGNOSTIC_SENSORS,
     STATUS_SENSORS,
     HomevoltSystemSensor,
     HomevoltStatusSensor,
     HomevoltBmsSensor,
     HomevoltCtSensor,
+    HomevoltCtNodeSensor,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -50,7 +54,15 @@ def _make_coordinator_with_data() -> MagicMock:
         ErrorReportEntry.from_dict(e)
         for e in _load_fixture("error_report_response.json")
     ]
-    data = HomevoltData(ems=ems, status=status, error_report=error_report)
+    nodes = [NodeInfo.from_dict(n) for n in _load_fixture("nodes_response.json")]
+    node_metrics = {
+        2: NodeMetrics.from_dict(_load_fixture("node_metrics_2_response.json")),
+        3: NodeMetrics.from_dict(_load_fixture("node_metrics_3_response.json")),
+    }
+    data = HomevoltData(
+        ems=ems, status=status, error_report=error_report,
+        nodes=nodes, node_metrics=node_metrics,
+    )
 
     coordinator = MagicMock(spec=HomevoltCoordinator)
     coordinator.data = data
@@ -370,6 +382,70 @@ class TestCtPhaseSensors:
 
 
 # ---------------------------------------------------------------------------
+# CT node sensor tests
+# ---------------------------------------------------------------------------
+
+class TestCtNodeSensors:
+    """Test CT clamp node sensors (battery, temp, firmware, OTA)."""
+
+    def test_ct_battery_voltage(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_battery_voltage")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.native_value == pytest.approx(2.73)
+
+    def test_ct_temperature(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_temperature")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.native_value == pytest.approx(-2.28)
+
+    def test_ct_node_uptime(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_node_uptime")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.native_value == 6552787
+
+    def test_ct_firmware(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_firmware")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.native_value == "1200-373138d6"
+
+    def test_ct_ota_status(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_ota_status")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor.native_value == "up2date"
+
+    def test_ct_node_missing_metrics_returns_none(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_battery_voltage")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 99, desc)
+        assert sensor.native_value is None
+
+    def test_ct_node_unique_id(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_battery_voltage")
+        euid = "a46dd4fffea23d6a"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 0, "grid", euid, 2, desc)
+        assert sensor._attr_unique_id == f"{euid}_ct_battery_voltage"
+
+    def test_ct_solar_node_temperature(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in CT_NODE_SENSORS if d.key == "ct_temperature")
+        euid = "a46dd4fffea284c2"
+        sensor = HomevoltCtNodeSensor(coord, ECU_ID, 1, "solar", euid, 3, desc)
+        assert sensor.native_value == pytest.approx(17.19)
+
+
+# ---------------------------------------------------------------------------
 # Diagnostic sensor tests
 # ---------------------------------------------------------------------------
 
@@ -454,10 +530,10 @@ class TestSensorPlatformSetup:
         # System: 18 + Voltage: 3 + Current: 3 + Diagnostic: 4 = 28 system sensors
         # Status: 4 (uptime, wifi_rssi, firmware_esp, firmware_efr)
         # BMS: 2 modules * 6 sensors = 12
-        # CT: 2 configured clamps * 18 sensors = 36 (power, energy_imp, energy_exp,
-        #     rssi, pdr, frequency, 3x voltage, 3x current, 3x power, 3x pf)
-        # Total: 28 + 4 + 12 + 36 = 80
-        assert len(entities) == 80
+        # CT: 2 configured clamps * 18 sensors = 36
+        # CT Node: 2 configured clamps * 5 sensors = 10
+        # Total: 28 + 4 + 12 + 36 + 10 = 90
+        assert len(entities) == 90
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

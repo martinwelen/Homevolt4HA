@@ -54,6 +54,8 @@ config/
       models.py
       sensor.py
       strings.json
+      translations/
+        en.json
 ```
 
 ## Configuration

@@ -1,0 +1,121 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Homevolt",
+        "description": "Enter the connection details for your Homevolt battery system.",
+        "data": {
+          "host": "Host",
+          "password": "Password (optional)",
+          "port": "Port",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Homevolt Discovered",
+        "description": "A Homevolt battery system was found at {host}.",
+        "data": {
+          "password": "Password (optional)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Homevolt device",
+      "invalid_auth": "Invalid password",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This Homevolt device is already configured",
+      "cannot_connect": "Cannot connect to the discovered device"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Homevolt Options",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery_status": { "name": "Status" },
+      "battery_state": { "name": "State" },
+      "battery_soc": { "name": "State of charge" },
+      "battery_power": { "name": "Power" },
+      "apparent_power": { "name": "Apparent power" },
+      "reactive_power": { "name": "Reactive power" },
+      "system_temperature": { "name": "System temperature" },
+      "grid_frequency": { "name": "Grid frequency" },
+      "energy_produced": { "name": "Energy produced" },
+      "energy_consumed": { "name": "Energy consumed" },
+      "energy_imported": { "name": "Energy imported" },
+      "energy_exported": { "name": "Energy exported" },
+      "available_charge_power": { "name": "Available charge power" },
+      "available_discharge_power": { "name": "Available discharge power" },
+      "available_charge_energy": { "name": "Available charge energy" },
+      "available_discharge_energy": { "name": "Available discharge energy" },
+      "rated_capacity": { "name": "Rated capacity" },
+      "rated_power": { "name": "Rated power" },
+      "phase_angle": { "name": "Phase angle" },
+      "voltage_l1": { "name": "Voltage L1" },
+      "voltage_l2": { "name": "Voltage L2" },
+      "voltage_l3": { "name": "Voltage L3" },
+      "voltage_l1_l2": { "name": "Voltage L1-L2" },
+      "voltage_l2_l3": { "name": "Voltage L2-L3" },
+      "voltage_l3_l1": { "name": "Voltage L3-L1" },
+      "current_l1": { "name": "Current L1" },
+      "current_l2": { "name": "Current L2" },
+      "current_l3": { "name": "Current L3" },
+      "bms_soc": { "name": "State of charge" },
+      "bms_state": { "name": "State" },
+      "bms_min_temperature": { "name": "Min temperature" },
+      "bms_max_temperature": { "name": "Max temperature" },
+      "bms_cycle_count": { "name": "Cycle count" },
+      "bms_energy_available": { "name": "Energy available" },
+      "bms_alarm": { "name": "Alarm" },
+      "ct_power": { "name": "Power" },
+      "ct_energy_imported": { "name": "Energy imported" },
+      "ct_energy_exported": { "name": "Energy exported" },
+      "ct_rssi": { "name": "RSSI" },
+      "ct_pdr": { "name": "Packet delivery rate" },
+      "ct_frequency": { "name": "Frequency" },
+      "ct_voltage_l1": { "name": "Voltage L1" },
+      "ct_voltage_l2": { "name": "Voltage L2" },
+      "ct_voltage_l3": { "name": "Voltage L3" },
+      "ct_current_l1": { "name": "Current L1" },
+      "ct_current_l2": { "name": "Current L2" },
+      "ct_current_l3": { "name": "Current L3" },
+      "ct_power_l1": { "name": "Power L1" },
+      "ct_power_l2": { "name": "Power L2" },
+      "ct_power_l3": { "name": "Power L3" },
+      "ct_power_factor_l1": { "name": "Power factor L1" },
+      "ct_power_factor_l2": { "name": "Power factor L2" },
+      "ct_power_factor_l3": { "name": "Power factor L3" },
+      "ems_info": { "name": "EMS info" },
+      "ems_warning": { "name": "EMS warning" },
+      "ems_alarm": { "name": "EMS alarm" },
+      "error_count": { "name": "Error count" },
+      "ems_error": { "name": "EMS error" },
+      "ct_battery_level": { "name": "Battery level" },
+      "ct_battery_voltage": { "name": "Battery voltage" },
+      "ct_temperature": { "name": "Temperature" },
+      "ct_node_uptime": { "name": "Node uptime" },
+      "ct_firmware": { "name": "Firmware" },
+      "ct_ota_status": { "name": "OTA status" },
+      "uptime": { "name": "Uptime" },
+      "wifi_rssi": { "name": "WiFi RSSI" },
+      "firmware_esp": { "name": "Firmware ESP" },
+      "firmware_efr": { "name": "Firmware EFR" }
+    },
+    "binary_sensor": {
+      "ct_available": { "name": "Available" },
+      "ct_usb_powered": { "name": "USB powered" },
+      "ct_firmware_update_available": { "name": "Firmware update available" },
+      "wifi_connected": { "name": "WiFi connected" },
+      "mqtt_connected": { "name": "MQTT connected" }
+    }
+  }
+}

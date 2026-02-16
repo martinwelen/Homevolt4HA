@@ -594,6 +594,7 @@ CT_NODE_SENSORS: tuple[HomevoltCtNodeSensorEntityDescription, ...] = (
         translation_key="ct_node_uptime",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_display_precision=0,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda m, n: m.node_uptime if m is not None else None,
     ),

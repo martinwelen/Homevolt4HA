@@ -89,10 +89,19 @@ class HomevoltSensorDeviceEntity(CoordinatorEntity[HomevoltCoordinator]):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information for the CT sensor."""
+        sw_version = None
+        if self.coordinator.data and self.coordinator.data.nodes:
+            node = next(
+                (n for n in self.coordinator.data.nodes if n.eui == self._euid),
+                None,
+            )
+            if node:
+                sw_version = node.version
         return DeviceInfo(
             identifiers={(DOMAIN, self._euid)},
             name=f"{self._sensor_type.title()} Sensor",
             manufacturer=MANUFACTURER,
             model="Tibber Pulse Clamp",
+            sw_version=sw_version,
             via_device=(DOMAIN, self._ecu_id),
         )

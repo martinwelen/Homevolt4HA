@@ -42,5 +42,11 @@ async def async_get_config_entry_diagnostics(
             diag["status"] = status_dict
         if coordinator.data.error_report:
             diag["error_report"] = [asdict(e) for e in coordinator.data.error_report]
+        if coordinator.data.nodes:
+            diag["nodes"] = [asdict(n) for n in coordinator.data.nodes]
+        if coordinator.data.node_metrics:
+            diag["node_metrics"] = {
+                str(k): asdict(v) for k, v in coordinator.data.node_metrics.items()
+            }
 
     return diag

@@ -7,7 +7,7 @@ A custom [Home Assistant](https://www.home-assistant.io/) integration for the **
 - **Local polling** -- communicates directly with your Homevolt EMS over your local network
 - **Automatic discovery** -- finds your Homevolt device via Zeroconf (mDNS)
 - **Dynamic hardware** -- automatically detects the number of BMS battery modules and CT clamp sensors
-- **40+ sensors** -- system power, energy, voltage, current, battery module details, CT clamps, diagnostics, and status
+- **105 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, and system status
 - **Configurable scan interval** -- default 30 seconds, adjustable from 10 to 300 seconds
 - **Diagnostics** -- download diagnostics data from the integration page for troubleshooting
 
@@ -43,6 +43,7 @@ config/
     homevolt/
       __init__.py
       api.py
+      binary_sensor.py
       config_flow.py
       const.py
       coordinator.py
@@ -84,7 +85,7 @@ After setup, you can change the scan interval:
 
 The integration creates sensors organized into the following groups. The exact number of entities depends on your hardware configuration (number of BMS modules and CT clamp sensors).
 
-### System sensors (18)
+### System sensors (19)
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
@@ -106,14 +107,18 @@ The integration creates sensors organized into the following groups. The exact n
 | Available discharge energy | Wh | Available energy capacity for discharging |
 | Rated capacity | Wh | Rated total energy capacity |
 | Rated power | W | Rated total power |
+| Phase angle | ° | Phase angle between voltage phases |
 
-### Voltage sensors (3)
+### Voltage sensors (6)
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
 | Voltage L1 | V | Phase 1 voltage |
 | Voltage L2 | V | Phase 2 voltage |
 | Voltage L3 | V | Phase 3 voltage |
+| Voltage L1-L2 | V | Line-to-line voltage between L1 and L2 |
+| Voltage L2-L3 | V | Line-to-line voltage between L2 and L3 |
+| Voltage L3-L1 | V | Line-to-line voltage between L3 and L1 |
 
 ### Current sensors (3)
 
@@ -123,7 +128,7 @@ The integration creates sensors organized into the following groups. The exact n
 | Current L2 | A | Phase 2 current |
 | Current L3 | A | Phase 3 current |
 
-### Battery module sensors (6 per module)
+### Battery module sensors (7 per module)
 
 These sensors are created for each BMS battery module detected. A typical installation has 2 modules.
 
@@ -135,21 +140,38 @@ These sensors are created for each BMS battery module detected. A typical instal
 | Max temperature | C | Maximum cell temperature |
 | Cycle count | cycles | Number of charge/discharge cycles |
 | Energy available | Wh | Currently available energy |
+| Alarm | -- | Active alarm messages (if any) |
 
-### CT clamp sensors (6 per clamp)
+### CT clamp sensors (18 per clamp)
 
-These sensors are created for each CT clamp sensor node detected. CT clamps are optional and used for monitoring mains current.
+These sensors are created for each CT clamp sensor node detected. CT clamps are optional and used for monitoring grid and solar current.
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
-| Power | W | Measured power |
+| Power | W | Total measured power |
 | Energy imported | kWh | Total energy imported |
 | Energy exported | kWh | Total energy exported |
 | RSSI | dBm | Wireless signal strength |
 | Packet delivery rate | % | Mesh network packet delivery rate |
-| Available | -- | Whether the CT sensor is reachable |
+| Frequency | Hz | AC frequency measured by CT clamp |
+| Voltage L1/L2/L3 | V | Per-phase voltage (3 sensors) |
+| Current L1/L2/L3 | A | Per-phase current (3 sensors) |
+| Power L1/L2/L3 | W | Per-phase power (3 sensors) |
+| Power factor L1/L2/L3 | -- | Per-phase power factor (3 sensors) |
 
-### Diagnostic sensors (4)
+### CT clamp node sensors (5 per clamp)
+
+Diagnostic sensors from the CT clamp mesh network nodes, providing hardware health data.
+
+| Sensor | Unit | Description |
+|--------|------|-------------|
+| Battery voltage | V | CT node coin cell battery voltage |
+| Temperature | C | CT node internal temperature |
+| Node uptime | s | Time since CT node last booted |
+| Firmware | -- | CT node firmware version |
+| OTA status | -- | Over-the-air update status |
+
+### Diagnostic sensors (5)
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
@@ -157,27 +179,38 @@ These sensors are created for each CT clamp sensor node detected. CT clamps are 
 | EMS warning | -- | Active warning messages |
 | EMS alarm | -- | Active alarm messages |
 | Error count | -- | Total number of errors from error report |
+| EMS error | -- | Current EMS error status |
 
-### Status sensors (6)
+### Status sensors (4)
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
 | Uptime | s | System uptime |
 | WiFi RSSI | dBm | WiFi signal strength |
-| WiFi connected | -- | WiFi connection status |
-| MQTT connected | -- | MQTT cloud connection status |
 | Firmware ESP | -- | ESP firmware version |
 | Firmware EFR | -- | EFR firmware version |
 
+### Binary sensors (8)
+
+| Sensor | Device class | Description |
+|--------|-------------|-------------|
+| WiFi connected | connectivity | WiFi connection status |
+| MQTT connected | connectivity | MQTT cloud connection status |
+| Available | connectivity | Whether the CT sensor is reachable (per clamp) |
+| USB powered | plug | Whether the CT node is USB powered (per clamp) |
+| Firmware update available | update | Whether a firmware update is pending (per clamp) |
+
 ## Data sources
 
-The integration polls three API endpoints with tiered intervals:
+The integration polls five API endpoints with tiered intervals:
 
 | Endpoint | Content | Poll frequency |
 |----------|---------|----------------|
 | `/ems.json` | System, voltage, current, BMS, CT data | Every cycle (default: 30s) |
 | `/error_report.json` | Error and diagnostic data | Every 4th cycle (~2 min) |
 | `/status.json` | Uptime, WiFi, MQTT, firmware | Every 10th cycle (~5 min) |
+| `/nodes.json` | CT node info, firmware versions | Every 10th cycle (~5 min) |
+| `/node_metrics.json` | CT node battery, temperature, uptime | Every 10th cycle (~5 min) |
 
 ## Troubleshooting
 
@@ -199,6 +232,7 @@ The integration polls three API endpoints with tiered intervals:
 - The integration may be waiting for initial data. Status and error report sensors update less frequently (see data sources above).
 - If all sensors are unavailable, check the device connectivity.
 - CT clamp sensors will be unavailable if no CT clamp nodes are connected to the Homevolt mesh network.
+- CT node sensors (battery voltage, temperature) require the `/node_metrics.json` endpoint, which is polled every ~5 minutes.
 - BMS sensors will only appear for detected battery modules.
 
 ### Enable debug logging

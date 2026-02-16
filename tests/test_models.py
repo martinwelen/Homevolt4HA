@@ -11,6 +11,8 @@ from custom_components.homevolt.models import (
     ErrorReportEntry,
     NodeMetrics,
     NodeInfo,
+    ScheduleData,
+    ScheduleEntry,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -294,3 +296,71 @@ def test_parse_node_info_empty():
     assert node.available is False
     assert node.ota_distribute_status == ""
     assert node.manifest_version == ""
+
+
+# ---------------------------------------------------------------------------
+# Schedule model tests
+# ---------------------------------------------------------------------------
+
+
+def test_parse_schedule_response():
+    """Test parsing /schedule.json response."""
+    data = json.loads((FIXTURES / "schedule_response.json").read_text())
+    schedule = ScheduleData.from_dict(data)
+
+    assert schedule.local_mode is False
+    assert schedule.schedule_id == "tibber_schedule_2026-02-16T00:00:00Z"
+    assert len(schedule.entries) == 6
+
+
+def test_parse_schedule_entry_types():
+    """Test schedule entry type parsing."""
+    data = json.loads((FIXTURES / "schedule_response.json").read_text())
+    schedule = ScheduleData.from_dict(data)
+
+    assert schedule.entries[0].type == 0  # idle
+    assert schedule.entries[0].type_name == "Idle"
+    assert schedule.entries[1].type == 3  # grid-charge
+    assert schedule.entries[1].type_name == "Grid Charge"
+    assert schedule.entries[3].type == 4  # grid-discharge
+    assert schedule.entries[3].type_name == "Grid Discharge"
+
+
+def test_parse_schedule_entry_fields():
+    """Test schedule entry field parsing."""
+    data = json.loads((FIXTURES / "schedule_response.json").read_text())
+    entry = ScheduleData.from_dict(data).entries[1]
+
+    assert entry.id == 1
+    assert entry.from_ts == 1739667600
+    assert entry.to_ts == 1739674800
+    assert entry.setpoint == 17250
+    assert entry.main_fuse == 25000
+
+
+def test_parse_schedule_empty():
+    """Test ScheduleData handles empty data gracefully."""
+    schedule = ScheduleData.from_dict({})
+
+    assert schedule.local_mode is False
+    assert schedule.schedule_id == ""
+    assert len(schedule.entries) == 0
+
+
+def test_parse_schedule_entry_empty():
+    """Test ScheduleEntry handles empty data gracefully."""
+    entry = ScheduleEntry.from_dict({})
+
+    assert entry.id == 0
+    assert entry.from_ts == 0
+    assert entry.to_ts == 0
+    assert entry.type == 0
+    assert entry.setpoint == 0
+    assert entry.main_fuse == 0
+    assert entry.type_name == "Idle"
+
+
+def test_schedule_entry_unknown_type():
+    """Test ScheduleEntry returns descriptive string for unknown types."""
+    entry = ScheduleEntry.from_dict({"type": 99})
+    assert entry.type_name == "Unknown (99)"

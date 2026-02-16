@@ -510,3 +510,9 @@ def node_metrics_2_fixture():
 def node_metrics_3_fixture():
     """Load node_metrics response fixture for node 3."""
     return json.loads((FIXTURES / "node_metrics_3_response.json").read_text())
+
+
+@pytest.fixture
+def schedule_fixture():
+    """Load schedule response fixture."""
+    return json.loads((FIXTURES / "schedule_response.json").read_text())

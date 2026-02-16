@@ -1,0 +1,54 @@
+{
+  "local_mode": false,
+  "schedule_id": "tibber_schedule_2026-02-16T00:00:00Z",
+  "entries": [
+    {
+      "id": 0,
+      "from_ts": 1739664000,
+      "to_ts": 1739667600,
+      "type": 0,
+      "setpoint": 0,
+      "main_fuse": 25000
+    },
+    {
+      "id": 1,
+      "from_ts": 1739667600,
+      "to_ts": 1739674800,
+      "type": 3,
+      "setpoint": 17250,
+      "main_fuse": 25000
+    },
+    {
+      "id": 2,
+      "from_ts": 1739674800,
+      "to_ts": 1739685600,
+      "type": 0,
+      "setpoint": 0,
+      "main_fuse": 25000
+    },
+    {
+      "id": 3,
+      "from_ts": 1739685600,
+      "to_ts": 1739696400,
+      "type": 4,
+      "setpoint": 6000,
+      "main_fuse": 25000
+    },
+    {
+      "id": 4,
+      "from_ts": 1739696400,
+      "to_ts": 1739700000,
+      "type": 0,
+      "setpoint": 0,
+      "main_fuse": 25000
+    },
+    {
+      "id": 5,
+      "from_ts": 1739700000,
+      "to_ts": 1739750400,
+      "type": 3,
+      "setpoint": 17250,
+      "main_fuse": 25000
+    }
+  ]
+}

@@ -554,6 +554,66 @@ class NodeInfo:
 
 
 @dataclass
+class ScheduleEntry:
+    """A single schedule time slot."""
+
+    id: int = 0
+    from_ts: int = 0
+    to_ts: int = 0
+    type: int = 0
+    setpoint: int = 0
+    main_fuse: int = 0
+
+    TYPE_NAMES: dict[int, str] = field(
+        default_factory=lambda: {
+            0: "Idle",
+            1: "Charging",
+            2: "Discharging",
+            3: "Grid Charge",
+            4: "Grid Discharge",
+            5: "Grid Charge/Discharge",
+            6: "Frequency Reserve",
+        },
+        repr=False,
+        compare=False,
+    )
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ScheduleEntry:
+        return cls(
+            id=data.get("id", 0),
+            from_ts=data.get("from_ts", 0),
+            to_ts=data.get("to_ts", 0),
+            type=data.get("type", 0),
+            setpoint=data.get("setpoint", 0),
+            main_fuse=data.get("main_fuse", 0),
+        )
+
+    @property
+    def type_name(self) -> str:
+        return self.TYPE_NAMES.get(self.type, f"Unknown ({self.type})")
+
+
+@dataclass
+class ScheduleData:
+    """Schedule response from /schedule.json."""
+
+    local_mode: bool = False
+    schedule_id: str = ""
+    entries: list[ScheduleEntry] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ScheduleData:
+        return cls(
+            local_mode=data.get("local_mode", False),
+            schedule_id=data.get("schedule_id", ""),
+            entries=[
+                ScheduleEntry.from_dict(e) for e in data.get("entries", [])
+            ],
+        )
+
+
+@dataclass
 class HomevoltData:
     """Combined data from all API endpoints."""
 
@@ -562,3 +622,4 @@ class HomevoltData:
     error_report: list[ErrorReportEntry] = field(default_factory=list)
     nodes: list[NodeInfo] = field(default_factory=list)
     node_metrics: dict[int, NodeMetrics] = field(default_factory=dict)
+    schedule: ScheduleData | None = None

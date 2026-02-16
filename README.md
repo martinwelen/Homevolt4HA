@@ -1,5 +1,9 @@
 # Homevolt for Home Assistant
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/v/release/martinwelen/Homevolt4HA)](https://github.com/martinwelen/Homevolt4HA/releases)
+[![License](https://img.shields.io/github/license/martinwelen/Homevolt4HA)](LICENSE)
+
 A custom [Home Assistant](https://www.home-assistant.io/) integration for the **Homevolt** battery system (manufactured by Tibber / Polarium). All communication is local over HTTP -- no cloud services required.
 
 ## Features

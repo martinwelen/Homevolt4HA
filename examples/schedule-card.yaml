@@ -1,0 +1,23 @@
+# Homevolt Schedule Card
+# Paste this into a manual card in your HA dashboard (Markdown card type).
+# Shows the current/next schedule action and a table of all schedule entries.
+
+type: markdown
+title: Homevolt Schedule
+content: >-
+  **Current:**
+  {{ states('sensor.homevolt_battery_system_schedule_current_action') }}
+
+  **Next:**
+  {{ states('sensor.homevolt_battery_system_schedule_next_action') }}
+
+  **Entries:** {{ states('sensor.homevolt_battery_system_schedule_entry_count') }}
+
+  | From | To | Action | Setpoint |
+  |------|-----|--------|----------|
+  {% set schedule = state_attr('sensor.homevolt_battery_system_schedule_current_action', 'schedule') %}
+  {% if schedule %}
+  {% for entry in schedule %}
+  | {{ entry.from | as_timestamp | timestamp_custom('%H:%M') }} | {{ entry.to | as_timestamp | timestamp_custom('%H:%M') }} | {{ entry.type }} | {{ entry.setpoint }} W |
+  {% endfor %}
+  {% endif %}

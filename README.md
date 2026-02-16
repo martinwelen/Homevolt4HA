@@ -7,7 +7,7 @@ A custom [Home Assistant](https://www.home-assistant.io/) integration for the **
 - **Local polling** -- communicates directly with your Homevolt EMS over your local network
 - **Automatic discovery** -- finds your Homevolt device via Zeroconf (mDNS)
 - **Dynamic hardware** -- automatically detects the number of BMS battery modules and CT clamp sensors
-- **107 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, and system status
+- **113 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, schedule, and system status
 - **Configurable scan interval** -- default 30 seconds, adjustable from 10 to 300 seconds
 - **Diagnostics** -- download diagnostics data from the integration page for troubleshooting
 
@@ -183,6 +183,14 @@ Sensors from the CT clamp mesh network nodes. Each CT node is powered by 2x AA b
 | Firmware | -- | CT node firmware version |
 | OTA status | -- | Over-the-air update status |
 
+### Schedule sensors (3)
+
+| Sensor | Unit | Description |
+|--------|------|-------------|
+| Schedule current action | -- | Current schedule action (e.g. "Grid Charge (17250 W)"). Extra attributes include the full schedule list for use in templates. |
+| Schedule next action | -- | Next scheduled action with time (e.g. "Grid Charge at 02:00") |
+| Schedule entry count | -- | Number of entries in the current schedule |
+
 ### Diagnostic sensors (5)
 
 | Sensor | Unit | Description |
@@ -202,12 +210,13 @@ Sensors from the CT clamp mesh network nodes. Each CT node is powered by 2x AA b
 | Firmware ESP | -- | ESP firmware version |
 | Firmware EFR | -- | EFR firmware version |
 
-### Binary sensors (8)
+### Binary sensors (9)
 
 | Sensor | Device class | Description |
 |--------|-------------|-------------|
 | WiFi connected | connectivity | WiFi connection status |
 | MQTT connected | connectivity | MQTT cloud connection status |
+| Schedule local mode | -- | Whether local scheduling mode is active (cloud schedule disabled) |
 | Available | connectivity | Whether the CT sensor is reachable (per clamp) |
 | USB powered | plug | Whether the CT node is USB powered (per clamp) |
 | Firmware update available | update | Whether a firmware update is pending (per clamp) |
@@ -223,6 +232,7 @@ The integration polls five API endpoints with tiered intervals:
 | `/status.json` | Uptime, WiFi, MQTT, firmware | Every 10th cycle (~5 min) |
 | `/nodes.json` | CT node info, firmware versions | Every 10th cycle (~5 min) |
 | `/node_metrics.json` | CT node battery, temperature, uptime | Every 10th cycle (~5 min) |
+| `/schedule.json` | Charging schedule, local mode | Every 10th cycle (~5 min) |
 
 ## Events
 
@@ -263,6 +273,8 @@ An example Lovelace dashboard is included in `examples/dashboard.yaml`. To use i
 6. Click **Save**
 
 The dashboard includes cards for system overview, energy, grid voltages, battery modules, CT clamps, and system health. Adjust entity IDs if you have renamed your devices.
+
+A schedule-specific Markdown card example is available in `examples/schedule-card.yaml`. It shows the current/next schedule action and renders the full schedule as a table.
 
 ## Troubleshooting
 

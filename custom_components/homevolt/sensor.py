@@ -38,6 +38,7 @@ from .entity import HomevoltBmsEntity, HomevoltEntity, HomevoltSensorDeviceEntit
 from .models import (
     BmsData,
     EmsDevice,
+    ErrorReportEntry,
     HomevoltData,
     NodeInfo,
     NodeMetrics,
@@ -803,6 +804,47 @@ STATUS_SENSORS: tuple[HomevoltStatusSensorEntityDescription, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Error report sensor
+# ---------------------------------------------------------------------------
+
+def _error_report_status(entries: list[ErrorReportEntry]) -> str | None:
+    """Return worst status from error report (ignoring 'unknown')."""
+    if not entries:
+        return None
+    statuses = {e.activated for e in entries}
+    if "error" in statuses:
+        return "error"
+    if "warning" in statuses:
+        return "warning"
+    return "ok"
+
+
+def _error_report_attrs(entries: list[ErrorReportEntry]) -> dict[str, Any]:
+    """Return extra attributes for the error report sensor."""
+    ok_count = sum(1 for e in entries if e.activated == "ok")
+    warning_count = sum(1 for e in entries if e.activated == "warning")
+    error_count = sum(1 for e in entries if e.activated == "error")
+    warnings = [
+        {"subsystem": e.sub_system_name, "name": e.error_name, "message": e.message}
+        for e in entries if e.activated == "warning"
+    ]
+    errors = [
+        {"subsystem": e.sub_system_name, "name": e.error_name, "message": e.message}
+        for e in entries if e.activated == "error"
+    ]
+    return {
+        "ok_count": ok_count,
+        "warning_count": warning_count,
+        "error_count": error_count,
+        "warnings": warnings,
+        "errors": errors,
+    }
+
+
+ERROR_REPORT_SENSOR_KEY = "error_report_status"
+
+
+# ---------------------------------------------------------------------------
 # Sensor entity classes
 # ---------------------------------------------------------------------------
 
@@ -980,6 +1022,33 @@ class HomevoltScheduleSensor(HomevoltEntity, SensorEntity):
         return self.entity_description.attr_fn(self.coordinator.data.schedule)
 
 
+class HomevoltErrorReportSensor(HomevoltEntity, SensorEntity):
+    """Sensor summarising the error report."""
+
+    def __init__(
+        self,
+        coordinator: HomevoltCoordinator,
+        ecu_id: str,
+    ) -> None:
+        """Initialize the error report sensor."""
+        super().__init__(coordinator, ecu_id)
+        self._attr_unique_id = f"{ecu_id}_{ERROR_REPORT_SENSOR_KEY}"
+        self._attr_translation_key = ERROR_REPORT_SENSOR_KEY
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the worst status across all error report entries."""
+        return _error_report_status(self.coordinator.data.error_report)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return counts and details of warnings/errors."""
+        if not self.coordinator.data.error_report:
+            return None
+        return _error_report_attrs(self.coordinator.data.error_report)
+
+
 # ---------------------------------------------------------------------------
 # Platform setup
 # ---------------------------------------------------------------------------
@@ -1010,6 +1079,9 @@ async def async_setup_entry(
     # --- Status sensors ---
     for desc in STATUS_SENSORS:
         entities.append(HomevoltStatusSensor(coordinator, ecu_id, desc))
+
+    # --- Error report sensor ---
+    entities.append(HomevoltErrorReportSensor(coordinator, ecu_id))
 
     # --- Schedule sensors ---
     for desc in SCHEDULE_SENSORS:

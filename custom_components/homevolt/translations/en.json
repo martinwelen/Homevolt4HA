@@ -120,7 +120,8 @@
       "firmware_efr": { "name": "Firmware EFR" },
       "schedule_current_action": { "name": "Schedule current action" },
       "schedule_next_action": { "name": "Schedule next action" },
-      "schedule_entry_count": { "name": "Schedule entry count" }
+      "schedule_entry_count": { "name": "Schedule entry count" },
+      "error_report_status": { "name": "Error report" }
     },
     "binary_sensor": {
       "ct_available": { "name": "Available" },

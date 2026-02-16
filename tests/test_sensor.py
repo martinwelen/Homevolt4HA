@@ -35,6 +35,9 @@ from custom_components.homevolt.sensor import (
     HomevoltCtSensor,
     HomevoltCtNodeSensor,
     HomevoltScheduleSensor,
+    HomevoltErrorReportSensor,
+    _error_report_status,
+    _error_report_attrs,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -572,6 +575,102 @@ class TestStatusSensors:
 
 
 # ---------------------------------------------------------------------------
+# Error report sensor tests
+# ---------------------------------------------------------------------------
+
+class TestErrorReportSensor:
+    """Test error report status sensor."""
+
+    def test_state_is_error_with_fixture(self):
+        """Fixture has OTA bg95 error + PULSE errors, so state should be 'error'."""
+        coord = _make_coordinator_with_data()
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor.native_value == "error"
+
+    def test_state_is_warning_when_only_warnings(self):
+        """When only warnings present, state should be 'warning'."""
+        coord = _make_coordinator_with_data()
+        coord.data.error_report = [
+            ErrorReportEntry(sub_system_name="EMS", error_name="test", activated="ok"),
+            ErrorReportEntry(sub_system_name="EMS", error_name="warn", activated="warning", message="low soc"),
+        ]
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor.native_value == "warning"
+
+    def test_state_is_ok_when_all_ok(self):
+        """When all entries are ok, state should be 'ok'."""
+        coord = _make_coordinator_with_data()
+        coord.data.error_report = [
+            ErrorReportEntry(sub_system_name="ECU", error_name="power_24v", activated="ok"),
+            ErrorReportEntry(sub_system_name="EMS", error_name="connectivity", activated="ok"),
+        ]
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor.native_value == "ok"
+
+    def test_state_is_none_when_empty(self):
+        """When error_report is empty, state should be None."""
+        coord = _make_coordinator_with_data()
+        coord.data.error_report = []
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor.native_value is None
+
+    def test_extra_attrs_with_fixture(self):
+        """Fixture should have correct counts and error/warning details."""
+        coord = _make_coordinator_with_data()
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        attrs = sensor.extra_state_attributes
+        assert attrs is not None
+        assert attrs["ok_count"] == 24
+        assert attrs["warning_count"] == 1
+        assert attrs["error_count"] == 9
+        assert len(attrs["warnings"]) == 1
+        assert attrs["warnings"][0]["subsystem"] == "EMS"
+        assert attrs["warnings"][0]["name"] == "ems_warning"
+        assert len(attrs["errors"]) == 9
+        # Check one specific error
+        bg95_errors = [e for e in attrs["errors"] if e["name"] == "Firmware for bg95"]
+        assert len(bg95_errors) == 1
+        assert bg95_errors[0]["subsystem"] == "OTA"
+
+    def test_extra_attrs_none_when_empty(self):
+        """When error_report is empty, extra attrs should be None."""
+        coord = _make_coordinator_with_data()
+        coord.data.error_report = []
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor.extra_state_attributes is None
+
+    def test_unique_id(self):
+        coord = _make_coordinator_with_data()
+        sensor = HomevoltErrorReportSensor(coord, ECU_ID)
+        assert sensor._attr_unique_id == f"{ECU_ID}_error_report_status"
+
+    def test_helper_error_report_status_ignores_unknown(self):
+        """The 'unknown' status should not affect the worst-status calculation."""
+        entries = [
+            ErrorReportEntry(activated="ok"),
+            ErrorReportEntry(activated="unknown"),
+        ]
+        assert _error_report_status(entries) == "ok"
+
+    def test_helper_error_report_attrs_counts(self):
+        """Test attr helper with mixed statuses."""
+        entries = [
+            ErrorReportEntry(sub_system_name="A", error_name="a1", activated="ok", message=""),
+            ErrorReportEntry(sub_system_name="B", error_name="b1", activated="warning", message="warn msg"),
+            ErrorReportEntry(sub_system_name="C", error_name="c1", activated="error", message="err msg"),
+            ErrorReportEntry(sub_system_name="D", error_name="d1", activated="unknown", message="unk"),
+        ]
+        attrs = _error_report_attrs(entries)
+        assert attrs["ok_count"] == 1
+        assert attrs["warning_count"] == 1
+        assert attrs["error_count"] == 1
+        assert len(attrs["warnings"]) == 1
+        assert attrs["warnings"][0] == {"subsystem": "B", "name": "b1", "message": "warn msg"}
+        assert len(attrs["errors"]) == 1
+        assert attrs["errors"][0] == {"subsystem": "C", "name": "c1", "message": "err msg"}
+
+
+# ---------------------------------------------------------------------------
 # Platform setup tests
 # ---------------------------------------------------------------------------
 
@@ -597,12 +696,13 @@ class TestSensorPlatformSetup:
         # Count expected entities:
         # System: 19 + Voltage: 6 + Current: 3 + Diagnostic: 5 = 33 system sensors
         # Status: 4 (uptime, wifi_rssi, firmware_esp, firmware_efr)
+        # Error report: 1
         # Schedule: 3 (current_action, next_action, entry_count)
         # BMS: 2 modules * 7 sensors = 14
         # CT: 2 configured clamps * 18 sensors = 36
         # CT Node: 2 configured clamps * 6 sensors = 12
-        # Total: 33 + 4 + 3 + 14 + 36 + 12 = 102
-        assert len(entities) == 102
+        # Total: 33 + 4 + 1 + 3 + 14 + 36 + 12 = 103
+        assert len(entities) == 103
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

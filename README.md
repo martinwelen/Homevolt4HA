@@ -7,7 +7,7 @@ A custom [Home Assistant](https://www.home-assistant.io/) integration for the **
 - **Local polling** -- communicates directly with your Homevolt EMS over your local network
 - **Automatic discovery** -- finds your Homevolt device via Zeroconf (mDNS)
 - **Dynamic hardware** -- automatically detects the number of BMS battery modules and CT clamp sensors
-- **113 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, schedule, and system status
+- **114 entities** -- system power, energy, voltage, current, battery module details, CT clamps with per-phase data, CT node diagnostics, schedule, and system status
 - **Configurable scan interval** -- default 30 seconds, adjustable from 10 to 300 seconds
 - **Diagnostics** -- download diagnostics data from the integration page for troubleshooting
 
@@ -201,7 +201,7 @@ Sensors from the CT clamp mesh network nodes. Each CT node is powered by 2x AA b
 | Error count | -- | Total number of errors from error report |
 | EMS error | -- | Current EMS error status |
 
-### Status sensors (4)
+### Status sensors (5)
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
@@ -209,6 +209,7 @@ Sensors from the CT clamp mesh network nodes. Each CT node is powered by 2x AA b
 | WiFi RSSI | dBm | WiFi signal strength |
 | Firmware ESP | -- | ESP firmware version |
 | Firmware EFR | -- | EFR firmware version |
+| Error report | -- | Worst status across all subsystems (ok/warning/error). Attributes include per-status counts and details of warnings and errors. |
 
 ### Binary sensors (9)
 

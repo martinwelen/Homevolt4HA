@@ -83,6 +83,15 @@ After setup, you can change the scan interval:
 2. Find the **Homevolt** integration and click **Configure**
 3. Adjust the **Scan interval** as needed
 
+### Reconfiguration
+
+To change the host, port, or password:
+
+1. Go to **Settings** > **Devices & services**
+2. Find the **Homevolt** integration and click the three-dot menu
+3. Select **Reconfigure**
+4. Update the connection details and click **Submit**
+
 ## Sensors
 
 The integration creates sensors organized into the following groups. The exact number of entities depends on your hardware configuration (number of BMS modules and CT clamp sensors).
@@ -214,6 +223,46 @@ The integration polls five API endpoints with tiered intervals:
 | `/status.json` | Uptime, WiFi, MQTT, firmware | Every 10th cycle (~5 min) |
 | `/nodes.json` | CT node info, firmware versions | Every 10th cycle (~5 min) |
 | `/node_metrics.json` | CT node battery, temperature, uptime | Every 10th cycle (~5 min) |
+
+## Events
+
+The integration fires events on the Home Assistant event bus when the EMS alarm, warning, or info state changes. You can use these in automations.
+
+| Event | Description |
+|-------|-------------|
+| `homevolt_alarm` | Fired when the EMS alarm state changes |
+| `homevolt_warning` | Fired when the EMS warning state changes |
+| `homevolt_info` | Fired when the EMS info state changes |
+
+Each event includes `previous` and `current` fields with the list of active messages.
+
+### Example automation
+
+```yaml
+automation:
+  - alias: "Homevolt alarm notification"
+    trigger:
+      - platform: event
+        event_type: homevolt_alarm
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Homevolt Alarm"
+          message: "{{ trigger.event.data.current | join(', ') }}"
+```
+
+## Example dashboard
+
+An example Lovelace dashboard is included in `examples/dashboard.yaml`. To use it:
+
+1. In Home Assistant, go to **Settings** > **Dashboards** > **Add Dashboard**
+2. Choose a name and click **Create**
+3. Open the new dashboard and click the three-dot menu > **Edit Dashboard**
+4. Click the three-dot menu again > **Raw configuration editor**
+5. Paste the contents of `examples/dashboard.yaml`
+6. Click **Save**
+
+The dashboard includes cards for system overview, energy, grid voltages, battery modules, CT clamps, and system health. Adjust entity IDs if you have renamed your devices.
 
 ## Troubleshooting
 

@@ -223,6 +223,13 @@ SYSTEM_SENSORS: tuple[HomevoltSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         value_fn=lambda agg: agg.ems_info.rated_power,
     ),
+    HomevoltSensorEntityDescription(
+        key="phase_angle",
+        translation_key="phase_angle",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="°",
+        value_fn=lambda agg: agg.ems_data.phase_angle,
+    ),
 )
 
 
@@ -257,6 +264,33 @@ VOLTAGE_SENSORS: tuple[HomevoltSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         suggested_display_precision=1,
         value_fn=lambda agg: agg.ems_voltage.l3 / 10,
+    ),
+    HomevoltSensorEntityDescription(
+        key="voltage_l1_l2",
+        translation_key="voltage_l1_l2",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda agg: agg.ems_voltage.l1_l2 / 10,
+    ),
+    HomevoltSensorEntityDescription(
+        key="voltage_l2_l3",
+        translation_key="voltage_l2_l3",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda agg: agg.ems_voltage.l2_l3 / 10,
+    ),
+    HomevoltSensorEntityDescription(
+        key="voltage_l3_l1",
+        translation_key="voltage_l3_l1",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=1,
+        value_fn=lambda agg: agg.ems_voltage.l3_l1 / 10,
     ),
 )
 
@@ -347,6 +381,12 @@ BMS_SENSORS: tuple[HomevoltBmsSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         value_fn=lambda bms: bms.energy_avail,
+    ),
+    HomevoltBmsSensorEntityDescription(
+        key="bms_alarm",
+        translation_key="bms_alarm",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda bms: ", ".join(bms.alarm_str) if bms.alarm_str else None,
     ),
 )
 
@@ -583,6 +623,12 @@ DIAGNOSTIC_SENSORS: tuple[HomevoltSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda agg: agg.error_cnt,
+    ),
+    HomevoltSensorEntityDescription(
+        key="ems_error",
+        translation_key="ems_error",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda agg: agg.error_str if agg.error_str else None,
     ),
 )
 

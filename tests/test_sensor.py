@@ -112,6 +112,12 @@ class TestSystemSensors:
         sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
         assert sensor.native_value == pytest.approx(4350.4)
 
+    def test_phase_angle(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in SYSTEM_SENSORS if d.key == "phase_angle")
+        sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == 90
+
     def test_unique_id_format(self):
         coord = _make_coordinator_with_data()
         desc = next(d for d in SYSTEM_SENSORS if d.key == "battery_soc")
@@ -189,6 +195,13 @@ class TestBmsSensors:
         serial = "80000274099724441432"
         sensor = HomevoltBmsSensor(coord, ECU_ID, 0, serial, desc)
         assert sensor.native_value == pytest.approx(9.2)
+
+    def test_bms_alarm_empty(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in BMS_SENSORS if d.key == "bms_alarm")
+        serial = "80000274099724441432"
+        sensor = HomevoltBmsSensor(coord, ECU_ID, 0, serial, desc)
+        assert sensor.native_value is None
 
     def test_bms_out_of_range_returns_none(self):
         coord = _make_coordinator_with_data()
@@ -449,6 +462,28 @@ class TestCtNodeSensors:
 # Diagnostic sensor tests
 # ---------------------------------------------------------------------------
 
+class TestLineToLineVoltageSensors:
+    """Test line-to-line voltage sensors."""
+
+    def test_voltage_l1_l2(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in VOLTAGE_SENSORS if d.key == "voltage_l1_l2")
+        sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == pytest.approx(395.1)
+
+    def test_voltage_l2_l3(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in VOLTAGE_SENSORS if d.key == "voltage_l2_l3")
+        sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == pytest.approx(392.4)
+
+    def test_voltage_l3_l1(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in VOLTAGE_SENSORS if d.key == "voltage_l3_l1")
+        sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == pytest.approx(393.6)
+
+
 class TestDiagnosticSensors:
     """Test diagnostic sensors."""
 
@@ -464,6 +499,12 @@ class TestDiagnosticSensors:
         desc = next(d for d in DIAGNOSTIC_SENSORS if d.key == "error_count")
         sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
         assert sensor.native_value == 0
+
+    def test_ems_error(self):
+        coord = _make_coordinator_with_data()
+        desc = next(d for d in DIAGNOSTIC_SENSORS if d.key == "ems_error")
+        sensor = HomevoltSystemSensor(coord, ECU_ID, desc)
+        assert sensor.native_value == "No error"
 
 
 # ---------------------------------------------------------------------------
@@ -527,13 +568,13 @@ class TestSensorPlatformSetup:
         await async_setup_entry(MagicMock(), entry, capture_entities)
 
         # Count expected entities:
-        # System: 18 + Voltage: 3 + Current: 3 + Diagnostic: 4 = 28 system sensors
+        # System: 19 + Voltage: 6 + Current: 3 + Diagnostic: 5 = 33 system sensors
         # Status: 4 (uptime, wifi_rssi, firmware_esp, firmware_efr)
-        # BMS: 2 modules * 6 sensors = 12
+        # BMS: 2 modules * 7 sensors = 14
         # CT: 2 configured clamps * 18 sensors = 36
         # CT Node: 2 configured clamps * 5 sensors = 10
-        # Total: 28 + 4 + 12 + 36 + 10 = 90
-        assert len(entities) == 90
+        # Total: 33 + 4 + 14 + 36 + 10 = 97
+        assert len(entities) == 97
 
     @pytest.mark.asyncio
     async def test_setup_skips_unconfigured_ct(self):

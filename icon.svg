@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- House body -->
+  <rect x="48" y="120" width="160" height="108" rx="8" fill="#3B82F6"/>
+
+  <!-- Roof -->
+  <path d="M24 128 L128 32 L232 128 Z" fill="#2563EB"/>
+
+  <!-- Door cutout (subtle) -->
+  <rect x="104" y="184" width="48" height="44" rx="4" fill="#1E40AF"/>
+
+  <!-- Battery body (centered in house) -->
+  <rect x="88" y="132" width="80" height="44" rx="6" fill="#FFFFFF" opacity="0.95"/>
+
+  <!-- Battery terminal -->
+  <rect x="168" y="145" width="10" height="18" rx="3" fill="#FFFFFF" opacity="0.95"/>
+
+  <!-- Battery charge level (green fill) -->
+  <rect x="93" y="137" width="52" height="34" rx="3" fill="#22C55E"/>
+
+  <!-- Battery charge lines -->
+  <line x1="110" y1="137" x2="110" y2="171" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4"/>
+  <line x1="127" y1="137" x2="127" y2="171" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Lightning bolt on battery -->
+  <path d="M122 140 L114 153 L120 153 L116 166 L130 150 L124 150 L128 140 Z" fill="#FFFFFF" opacity="0.9"/>
+</svg>
